@@ -427,11 +427,11 @@ def ui(low_gpu_memory_mode, weight_dtype):
     with gr.Blocks(css=css) as demo:
         gr.Markdown(
             """
-            # CogVideoX-Arbitrary:
+            # CogVideoX-Fun:
 
             A CogVideoX with more flexible generation conditions, capable of producing videos of different resolutions, around 6 seconds, and fps 8 (frames 1 to 49), as well as image generated videos. 
 
-            [Github](https://github.com/aigc-apps/CogVideoX-Arbitrary/)
+            [Github](https://github.com/aigc-apps/CogVideoX-Fun/)
             """
         )
         with gr.Column(variant="panel"):
@@ -872,11 +872,11 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
     with gr.Blocks(css=css) as demo:
         gr.Markdown(
             """
-            # CogVideoX-Arbitrary
+            # CogVideoX-Fun
 
             A CogVideoX with more flexible generation conditions, capable of producing videos of different resolutions, around 6 seconds, and fps 8 (frames 1 to 49), as well as image generated videos. 
 
-            [Github](https://github.com/aigc-apps/CogVideoX-Arbitrary/)
+            [Github](https://github.com/aigc-apps/CogVideoX-Fun/)
             """
         )
         with gr.Column(variant="panel"):
@@ -903,7 +903,7 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
                 with gr.Column(visible=False):
                     gr.Markdown(
                         """
-                        ### Minimalism is an example portrait of Lora, triggered by specific prompt words. More details can be found on [Wiki](https://github.com/aigc-apps/CogVideoX-Arbitrary/wiki/Training-Lora).
+                        ### Minimalism is an example portrait of Lora, triggered by specific prompt words. More details can be found on [Wiki](https://github.com/aigc-apps/CogVideoX-Fun/wiki/Training-Lora).
                         """
                     )
                     with gr.Row():
@@ -1206,11 +1206,11 @@ def ui_eas(model_name, savedir_sample):
     with gr.Blocks(css=css) as demo:
         gr.Markdown(
             """
-            # CogVideoX-Arbitrary
+            # CogVideoX-Fun
 
             A CogVideoX with more flexible generation conditions, capable of producing videos of different resolutions, around 6 seconds, and fps 8 (frames 1 to 49), as well as image generated videos. 
 
-            [Github](https://github.com/aigc-apps/CogVideoX-Arbitrary/)
+            [Github](https://github.com/aigc-apps/CogVideoX-Fun/)
             """
         )
         with gr.Column(variant="panel"):
@@ -1237,7 +1237,7 @@ def ui_eas(model_name, savedir_sample):
                 with gr.Column(visible=False):
                     gr.Markdown(
                         """
-                        ### Minimalism is an example portrait of Lora, triggered by specific prompt words. More details can be found on [Wiki](https://github.com/aigc-apps/CogVideoX-Arbitrary/wiki/Training-Lora).
+                        ### Minimalism is an example portrait of Lora, triggered by specific prompt words. More details can be found on [Wiki](https://github.com/aigc-apps/CogVideoX-Fun/wiki/Training-Lora).
                         """
                     )
                     with gr.Row():

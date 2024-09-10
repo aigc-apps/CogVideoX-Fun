@@ -1,8 +1,8 @@
 ## Lora Training Code
 
-We can choose whether to use deep speed in CogVideoX-Arbitrary, which can save a lot of video memory. 
+We can choose whether to use deep speed in CogVideoX-Fun, which can save a lot of video memory. 
 
-CogVideoX-Arbitrary without deepspeed:
+CogVideoX-Fun without deepspeed:
 
 ```sh
 export MODEL_NAME="models/Diffusion_Transformer/CogVideoX-Fun-2b-InP"
