@@ -109,7 +109,7 @@ Linux 的详细信息：
 ##### i、运行python文件
 - 步骤1：下载对应[权重](#model-zoo)放入models文件夹。
 - 步骤2：在predict_t2v.py文件中修改prompt、neg_prompt、guidance_scale和seed。
-- 步骤3：运行predict_t2v.py文件，等待生成结果，结果保存在samples/cogvideox-videos-t2v文件夹中。
+- 步骤3：运行predict_t2v.py文件，等待生成结果，结果保存在samples/cogvideox-fun-videos-t2v文件夹中。
 - 步骤4：如果想结合自己训练的其他backbone与Lora，则看情况修改predict_t2v.py中的predict_t2v.py和lora_path。
 
 ##### ii、通过ui界面

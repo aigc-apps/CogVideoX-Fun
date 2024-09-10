@@ -70,8 +70,8 @@ from cogvideox.data.bucket_sampler import (ASPECT_RATIO_512,
                                            AspectRatioBatchImageVideoSampler,
                                            AspectRatioBatchSampler,
                                            RandomSampler, get_closest_ratio)
-from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_FUN_Pipeline
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_FUN_Pipeline_Inpaint
+from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
+from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.data.dataset_image import CC15M
 from cogvideox.data.dataset_image_video import (ImageVideoDataset,
                                                 ImageVideoSampler,
@@ -168,7 +168,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, network, args, a
         transformer3d_val.load_state_dict(accelerator.unwrap_model(transformer3d).state_dict())
         
         if args.train_mode != "normal":
-            pipeline = CogVideoX_FUN_Pipeline_Inpaint.from_pretrained(
+            pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
                 args.pretrained_model_name_or_path, 
                 vae=accelerator.unwrap_model(vae).to(weight_dtype), 
                 text_encoder=accelerator.unwrap_model(text_encoder),
@@ -177,7 +177,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, network, args, a
                 torch_dtype=weight_dtype,
             )
         else:
-            pipeline = CogVideoX_FUN_Pipeline.from_pretrained(
+            pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
                 args.pretrained_model_name_or_path, 
                 vae=accelerator.unwrap_model(vae).to(weight_dtype), 
                 text_encoder=accelerator.unwrap_model(text_encoder),

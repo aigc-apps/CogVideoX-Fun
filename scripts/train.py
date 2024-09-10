@@ -72,8 +72,8 @@ from cogvideox.data.dataset_image_video import (ImageVideoDataset,
                                                   ImageVideoSampler,
                                                   get_random_mask)
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
-from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_FUN_Pipeline
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_FUN_Pipeline_Inpaint
+from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
+from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 
 if is_wandb_available():
@@ -163,7 +163,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
         transformer3d_val.load_state_dict(accelerator.unwrap_model(transformer3d).state_dict())
 
         if args.train_mode != "normal":
-            pipeline = CogVideoX_FUN_Pipeline_Inpaint.from_pretrained(
+            pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
                 args.pretrained_model_name_or_path, 
                 vae=accelerator.unwrap_model(vae).to(weight_dtype), 
                 text_encoder=accelerator.unwrap_model(text_encoder),
@@ -172,7 +172,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
                 torch_dtype=weight_dtype
             )
         else:
-            pipeline = CogVideoX_FUN_Pipeline.from_pretrained(
+            pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
                 args.pretrained_model_name_or_path, 
                 vae=accelerator.unwrap_model(vae).to(weight_dtype), 
                 text_encoder=accelerator.unwrap_model(text_encoder),

@@ -22,9 +22,9 @@ from transformers import T5EncoderModel, T5Tokenizer
 from ..cogvideox.data.bucket_sampler import ASPECT_RATIO_512, get_closest_ratio
 from ..cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from ..cogvideox.models.transformer3d import CogVideoXTransformer3DModel
-from ..cogvideox.pipeline.pipeline_cogvideox import CogVideoX_FUN_Pipeline
+from ..cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
 from ..cogvideox.pipeline.pipeline_cogvideox_inpaint import (
-    CogVideoX_FUN_Pipeline_Inpaint)
+    CogVideoX_Fun_Pipeline_Inpaint)
 from ..cogvideox.utils.lora_utils import merge_lora, unmerge_lora
 from ..cogvideox.utils.utils import (get_image_to_video_latent,
                                      get_video_to_video_latent,
@@ -50,7 +50,7 @@ def to_pil(image):
         return numpy2pil(image)
     raise ValueError(f"Cannot convert {type(image)} to PIL.Image")
 
-class LoadCogVideoX_FUN_Model:
+class LoadCogVideoX_Fun_Model:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -94,11 +94,11 @@ class LoadCogVideoX_FUN_Model:
         pbar = ProgressBar(3)
 
         # Detect model is existing or not 
-        model_path = os.path.join(folder_paths.models_dir, "CogVideoX_FUN", model)
+        model_path = os.path.join(folder_paths.models_dir, "CogVideoX_Fun", model)
       
         if not os.path.exists(model_path):
             if os.path.exists(eas_cache_dir):
-                model_path = os.path.join(eas_cache_dir, 'CogVideoX_FUN', model)
+                model_path = os.path.join(eas_cache_dir, 'CogVideoX_Fun', model)
             else:
                 print(f"Please download cogvideoxfun model to: {model_path}")
 
@@ -125,7 +125,7 @@ class LoadCogVideoX_FUN_Model:
 
         # Get pipeline
         if transformer.config.in_channels != vae.config.latent_channels:
-            pipeline = CogVideoX_FUN_Pipeline_Inpaint.from_pretrained(
+            pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
                 model_path,
                 vae=vae, 
                 transformer=transformer,
@@ -133,7 +133,7 @@ class LoadCogVideoX_FUN_Model:
                 torch_dtype=weight_dtype
             )
         else:
-            pipeline = CogVideoX_FUN_Pipeline.from_pretrained(
+            pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
                 model_path,
                 vae=vae, 
                 transformer=transformer,
@@ -154,7 +154,7 @@ class LoadCogVideoX_FUN_Model:
         }
         return (cogvideoxfun_model,)
 
-class LoadCogVideoX_FUN_Lora:
+class LoadCogVideoX_Fun_Lora:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -200,7 +200,7 @@ class TextBox:
     def process(self, prompt):
         return (prompt, )
 
-class CogVideoX_FUN_I2VSampler:
+class CogVideoX_Fun_I2VSampler:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -320,7 +320,7 @@ class CogVideoX_FUN_I2VSampler:
         return (videos,)   
 
 
-class CogVideoX_FUN_T2VSampler:
+class CogVideoX_Fun_T2VSampler:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -435,7 +435,7 @@ class CogVideoX_FUN_T2VSampler:
                 pipeline = unmerge_lora(pipeline, _lora_path, _lora_weight)
         return (videos,)   
 
-class CogVideoX_FUN_V2VSampler:
+class CogVideoX_Fun_V2VSampler:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -559,19 +559,19 @@ class CogVideoX_FUN_V2VSampler:
 
 NODE_CLASS_MAPPINGS = {
     "TextBox": TextBox,
-    "LoadCogVideoX_FUN_Model": LoadCogVideoX_FUN_Model,
-    "LoadCogVideoX_FUN_Lora": LoadCogVideoX_FUN_Lora,
-    "CogVideoX_FUN_I2VSampler": CogVideoX_FUN_I2VSampler,
-    "CogVideoX_FUN_T2VSampler": CogVideoX_FUN_T2VSampler,
-    "CogVideoX_FUN_V2VSampler": CogVideoX_FUN_V2VSampler,
+    "LoadCogVideoX_Fun_Model": LoadCogVideoX_Fun_Model,
+    "LoadCogVideoX_Fun_Lora": LoadCogVideoX_Fun_Lora,
+    "CogVideoX_Fun_I2VSampler": CogVideoX_Fun_I2VSampler,
+    "CogVideoX_Fun_T2VSampler": CogVideoX_Fun_T2VSampler,
+    "CogVideoX_Fun_V2VSampler": CogVideoX_Fun_V2VSampler,
 }
 
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "TextBox": "TextBox",
-    "LoadCogVideoX_FUN_Model": "Load CogVideoX-Fun Model",
-    "LoadCogVideoX_FUN_Lora": "Load CogVideoX-Fun Lora",
-    "CogVideoX_FUN_I2VSampler": "CogVideoX-Fun Sampler for Image to Video",
-    "CogVideoX_FUN_T2VSampler": "CogVideoX-Fun Sampler for Text to Video",
-    "CogVideoX_FUN_V2VSampler": "CogVideoX-Fun Sampler for Video to Video",
+    "LoadCogVideoX_Fun_Model": "Load CogVideoX-Fun Model",
+    "LoadCogVideoX_Fun_Lora": "Load CogVideoX-Fun Lora",
+    "CogVideoX_Fun_I2VSampler": "CogVideoX-Fun Sampler for Image to Video",
+    "CogVideoX_Fun_T2VSampler": "CogVideoX-Fun Sampler for Text to Video",
+    "CogVideoX_Fun_V2VSampler": "CogVideoX-Fun Sampler for Video to Video",
 }

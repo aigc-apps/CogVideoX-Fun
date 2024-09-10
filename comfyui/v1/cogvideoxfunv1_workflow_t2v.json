@@ -83,7 +83,7 @@
     },
     {
       "id": 87,
-      "type": "LoadCogVideoX_FUN_Model",
+      "type": "LoadCogVideoX_Fun_Model",
       "pos": [
         302,
         -285
@@ -107,7 +107,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "LoadCogVideoX_FUN_Model"
+        "Node name for S&R": "LoadCogVideoX_Fun_Model"
       },
       "widgets_values": [
         "CogVideoX-Fun-2b-InP",
@@ -150,7 +150,7 @@
     },
     {
       "id": 88,
-      "type": "CogVideoX_FUN_T2VSampler",
+      "type": "CogVideoX_Fun_T2VSampler",
       "pos": [
         728,
         -68
@@ -192,7 +192,7 @@
         }
       ],
       "properties": {
-        "Node name for S&R": "CogVideoX_FUN_T2VSampler"
+        "Node name for S&R": "CogVideoX_Fun_T2VSampler"
       },
       "widgets_values": [
         49,

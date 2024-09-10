@@ -95,7 +95,6 @@ We need about 60GB available on disk (for saving weights), please check!
 #### b. Weights
 We'd better place the [weights](#model-zoo) along the specified path:
 
-EasyAnimateV4:
 ```
 📦 models/
 ├── 📂 Diffusion_Transformer/
@@ -111,7 +110,7 @@ EasyAnimateV4:
 #### a. Using Python Code
 - Step 1: Download the corresponding [weights](#model-zoo) and place them in the models folder.
 - Step 2: Modify prompt, neg_prompt, guidance_scale, and seed in the predict_t2v.py file.
-- Step 3: Run the predict_t2v.py file, wait for the generated results, and save the results in the samples/easyanimate-videos-t2v folder.
+- Step 3: Run the predict_t2v.py file, wait for the generated results, and save the results in the samples/cogvideox-fun-videos-t2v folder.
 - Step 4: If you want to combine other backbones you have trained with Lora, modify the predict_t2v.py and Lora_path in predict_t2v.py depending on the situation.
 
 #### b. Using webui

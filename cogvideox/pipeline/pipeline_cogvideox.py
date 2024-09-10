@@ -38,11 +38,11 @@ EXAMPLE_DOC_STRING = """
     Examples:
         ```python
         >>> import torch
-        >>> from diffusers import CogVideoX_FUN_Pipeline
+        >>> from diffusers import CogVideoX_Fun_Pipeline
         >>> from diffusers.utils import export_to_video
 
         >>> # Models: "THUDM/CogVideoX-2b" or "THUDM/CogVideoX-5b"
-        >>> pipe = CogVideoX_FUN_Pipeline.from_pretrained("THUDM/CogVideoX-2b", torch_dtype=torch.float16).to("cuda")
+        >>> pipe = CogVideoX_Fun_Pipeline.from_pretrained("THUDM/CogVideoX-2b", torch_dtype=torch.float16).to("cuda")
         >>> prompt = (
         ...     "A panda, dressed in a small, red jacket and a tiny hat, sits on a wooden stool in a serene bamboo forest. "
         ...     "The panda's fluffy paws strum a miniature acoustic guitar, producing soft, melodic tunes. Nearby, a few other "
@@ -137,7 +137,7 @@ def retrieve_timesteps(
 
 
 @dataclass
-class CogVideoX_FUN_PipelineOutput(BaseOutput):
+class CogVideoX_Fun_PipelineOutput(BaseOutput):
     r"""
     Output class for CogVideo pipelines.
 
@@ -151,9 +151,9 @@ class CogVideoX_FUN_PipelineOutput(BaseOutput):
     videos: torch.Tensor
 
 
-class CogVideoX_FUN_Pipeline(DiffusionPipeline):
+class CogVideoX_Fun_Pipeline(DiffusionPipeline):
     r"""
-    Pipeline for text-to-video generation using CogVideoX_FUN.
+    Pipeline for text-to-video generation using CogVideoX_Fun.
 
     This model inherits from [`DiffusionPipeline`]. Check the superclass documentation for the generic methods the
     library implements for all the pipelines (such as downloading or saving, running on a particular device, etc.)
@@ -511,7 +511,7 @@ class CogVideoX_FUN_Pipeline(DiffusionPipeline):
         ] = None,
         callback_on_step_end_tensor_inputs: List[str] = ["latents"],
         max_sequence_length: int = 226,
-    ) -> Union[CogVideoX_FUN_PipelineOutput, Tuple]:
+    ) -> Union[CogVideoX_Fun_PipelineOutput, Tuple]:
         """
         Function invoked when calling the pipeline for generation.
 
@@ -583,8 +583,8 @@ class CogVideoX_FUN_Pipeline(DiffusionPipeline):
         Examples:
 
         Returns:
-            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_FUN_PipelineOutput`] or `tuple`:
-            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_FUN_PipelineOutput`] if `return_dict` is True, otherwise a
+            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_Fun_PipelineOutput`] or `tuple`:
+            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_Fun_PipelineOutput`] if `return_dict` is True, otherwise a
             `tuple`. When returning a tuple, the first element is a list with the generated images.
         """
 
@@ -748,4 +748,4 @@ class CogVideoX_FUN_Pipeline(DiffusionPipeline):
         if not return_dict:
             video = torch.from_numpy(video)
 
-        return CogVideoX_FUN_PipelineOutput(videos=video)
+        return CogVideoX_Fun_PipelineOutput(videos=video)

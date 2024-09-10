@@ -15,8 +15,8 @@ from PIL import Image
 
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
-from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_FUN_Pipeline
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_FUN_Pipeline_Inpaint
+from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
+from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.utils.lora_utils import merge_lora, unmerge_lora
 from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 
@@ -103,7 +103,7 @@ scheduler = Choosen_Scheduler.from_pretrained(
 )
 
 if transformer.config.in_channels != vae.config.latent_channels:
-    pipeline = CogVideoX_FUN_Pipeline_Inpaint.from_pretrained(
+    pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
         model_name,
         vae=vae,
         text_encoder=text_encoder,
@@ -112,7 +112,7 @@ if transformer.config.in_channels != vae.config.latent_channels:
         torch_dtype=weight_dtype
     )
 else:
-    pipeline = CogVideoX_FUN_Pipeline.from_pretrained(
+    pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
         model_name,
         vae=vae,
         text_encoder=text_encoder,

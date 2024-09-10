@@ -29,9 +29,9 @@ from transformers import (CLIPImageProcessor, CLIPVisionModelWithProjection,
 from cogvideox.data.bucket_sampler import ASPECT_RATIO_512, get_closest_ratio
 from ..models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
-from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_FUN_Pipeline
+from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
 from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
-    CogVideoX_FUN_Pipeline_Inpaint
+    CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.utils.lora_utils import merge_lora, unmerge_lora
 from cogvideox.utils.utils import (
     get_image_to_video_latent, get_video_to_video_latent,
@@ -119,7 +119,7 @@ class CogVideoX_I2VController:
         
         # Get pipeline
         if self.transformer.config.in_channels != self.vae.config.latent_channels:
-            self.pipeline = CogVideoX_FUN_Pipeline_Inpaint.from_pretrained(
+            self.pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
                 diffusion_transformer_dropdown,
                 vae=self.vae, 
                 transformer=self.transformer,
@@ -127,7 +127,7 @@ class CogVideoX_I2VController:
                 torch_dtype=self.weight_dtype
             )
         else:
-            self.pipeline = CogVideoX_FUN_Pipeline.from_pretrained(
+            self.pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
                 diffusion_transformer_dropdown,
                 vae=self.vae, 
                 transformer=self.transformer,
@@ -673,7 +673,7 @@ class CogVideoX_I2VController_Modelscope:
         
         # Get pipeline
         if self.transformer.config.in_channels != self.vae.config.latent_channels:
-            self.pipeline = CogVideoX_FUN_Pipeline_Inpaint.from_pretrained(
+            self.pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
                 model_name,
                 vae=self.vae, 
                 transformer=self.transformer,
@@ -681,7 +681,7 @@ class CogVideoX_I2VController_Modelscope:
                 torch_dtype=self.weight_dtype
             )
         else:
-            self.pipeline = CogVideoX_FUN_Pipeline.from_pretrained(
+            self.pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
                 model_name,
                 vae=self.vae, 
                 transformer=self.transformer,

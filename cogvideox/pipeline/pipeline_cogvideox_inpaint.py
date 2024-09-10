@@ -42,11 +42,11 @@ EXAMPLE_DOC_STRING = """
     Examples:
         ```python
         >>> import torch
-        >>> from diffusers import CogVideoX_FUN_Pipeline
+        >>> from diffusers import CogVideoX_Fun_Pipeline
         >>> from diffusers.utils import export_to_video
 
         >>> # Models: "THUDM/CogVideoX-2b" or "THUDM/CogVideoX-5b"
-        >>> pipe = CogVideoX_FUN_Pipeline.from_pretrained("THUDM/CogVideoX-2b", torch_dtype=torch.float16).to("cuda")
+        >>> pipe = CogVideoX_Fun_Pipeline.from_pretrained("THUDM/CogVideoX-2b", torch_dtype=torch.float16).to("cuda")
         >>> prompt = (
         ...     "A panda, dressed in a small, red jacket and a tiny hat, sits on a wooden stool in a serene bamboo forest. "
         ...     "The panda's fluffy paws strum a miniature acoustic guitar, producing soft, melodic tunes. Nearby, a few other "
@@ -178,7 +178,7 @@ def resize_mask(mask, latent, process_first_frame_only=True):
 
 
 @dataclass
-class CogVideoX_FUN_PipelineOutput(BaseOutput):
+class CogVideoX_Fun_PipelineOutput(BaseOutput):
     r"""
     Output class for CogVideo pipelines.
 
@@ -192,7 +192,7 @@ class CogVideoX_FUN_PipelineOutput(BaseOutput):
     videos: torch.Tensor
 
 
-class CogVideoX_FUN_Pipeline_Inpaint(DiffusionPipeline):
+class CogVideoX_Fun_Pipeline_Inpaint(DiffusionPipeline):
     r"""
     Pipeline for text-to-video generation using CogVideoX.
 
@@ -203,7 +203,7 @@ class CogVideoX_FUN_Pipeline_Inpaint(DiffusionPipeline):
         vae ([`AutoencoderKL`]):
             Variational Auto-Encoder (VAE) Model to encode and decode videos to and from latent representations.
         text_encoder ([`T5EncoderModel`]):
-            Frozen text-encoder. CogVideoX_FUN uses
+            Frozen text-encoder. CogVideoX_Fun uses
             [T5](https://huggingface.co/docs/transformers/model_doc/t5#transformers.T5EncoderModel); specifically the
             [t5-v1_1-xxl](https://huggingface.co/PixArt-alpha/PixArt-alpha/tree/main/t5-v1_1-xxl) variant.
         tokenizer (`T5Tokenizer`):
@@ -651,7 +651,7 @@ class CogVideoX_FUN_Pipeline_Inpaint(DiffusionPipeline):
         max_sequence_length: int = 226,
         strength: float = 1,
         comfyui_progressbar: bool = False,
-    ) -> Union[CogVideoX_FUN_PipelineOutput, Tuple]:
+    ) -> Union[CogVideoX_Fun_PipelineOutput, Tuple]:
         """
         Function invoked when calling the pipeline for generation.
 
@@ -669,7 +669,7 @@ class CogVideoX_FUN_Pipeline_Inpaint(DiffusionPipeline):
                 The width in pixels of the generated image. This is set to 1024 by default for the best results.
             num_frames (`int`, defaults to `48`):
                 Number of frames to generate. Must be divisible by self.vae_scale_factor_temporal. Generated video will
-                contain 1 extra frame because CogVideoX_FUN is conditioned with (num_seconds * fps + 1) frames where
+                contain 1 extra frame because CogVideoX_Fun is conditioned with (num_seconds * fps + 1) frames where
                 num_seconds is 6 and fps is 4. However, since videos can be saved at any fps, the only condition that
                 needs to be satisfied is that of divisibility mentioned above.
             num_inference_steps (`int`, *optional*, defaults to 50):
@@ -723,8 +723,8 @@ class CogVideoX_FUN_Pipeline_Inpaint(DiffusionPipeline):
         Examples:
 
         Returns:
-            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_FUN_PipelineOutput`] or `tuple`:
-            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_FUN_PipelineOutput`] if `return_dict` is True, otherwise a
+            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_Fun_PipelineOutput`] or `tuple`:
+            [`~pipelines.cogvideo.pipeline_cogvideox.CogVideoX_Fun_PipelineOutput`] if `return_dict` is True, otherwise a
             `tuple`. When returning a tuple, the first element is a list with the generated images.
         """
 
@@ -1000,4 +1000,4 @@ class CogVideoX_FUN_Pipeline_Inpaint(DiffusionPipeline):
         if not return_dict:
             video = torch.from_numpy(video)
 
-        return CogVideoX_FUN_PipelineOutput(videos=video)
+        return CogVideoX_Fun_PipelineOutput(videos=video)
