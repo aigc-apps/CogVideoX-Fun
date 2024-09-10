@@ -1,0 +1,174 @@
+# Video Caption
+English | [简体中文](./README_zh-CN.md)
+
+The folder contains codes for dataset preprocessing (i.e., video splitting, filtering, and recaptioning), and beautiful prompt used by CogVideoX-Fun.
+The entire process supports distributed parallel processing, capable of handling large-scale datasets.
+
+Meanwhile, we are collaborating with [Data-Juicer](https://github.com/modelscope/data-juicer/blob/main/docs/DJ_SORA.md),
+allowing you to easily perform video data processing on [Aliyun PAI-DLC](https://help.aliyun.com/zh/pai/user-guide/video-preprocessing/).
+
+# Table of Content
+- [Video Caption](#video-caption)
+- [Table of Content](#table-of-content)
+  - [Quick Start](#quick-start)
+    - [Setup](#setup)
+    - [Data Preprocessing](#data-preprocessing)
+      - [Data Preparation](#data-preparation)
+      - [Video Splitting](#video-splitting)
+      - [Video Filtering](#video-filtering)
+      - [Video Recaptioning](#video-recaptioning)
+    - [Beautiful Prompt (For CogVideoX-Fun Inference)](#beautiful-prompt-for-cogvideox-inference)
+      - [Batched Inference](#batched-inference)
+      - [OpenAI Server](#openai-server)
+
+## Quick Start
+
+### Setup
+AliyunDSW or Docker is recommended to setup the environment, please refer to [Quick Start](../../README.md#quick-start).
+You can also refer to the image build process in the [Dockerfile](../../Dockerfile.ds) to configure the conda environment and other dependencies locally.
+
+Since the video recaptioning depends on [llm-awq](https://github.com/mit-han-lab/llm-awq) for faster and memory efficient inference,
+the minimum GPU requirment should be RTX 3060 or A2 (CUDA Compute Capability >= 8.0).
+
+```shell
+# pull image
+docker pull mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/easycv/torch_cuda:cogvideox_fun
+
+# enter image
+docker run -it -p 7860:7860 --network host --gpus all --security-opt seccomp:unconfined --shm-size 200g mybigpai-public-registry.cn-beijing.cr.aliyuncs.com/easycv/torch_cuda:cogvideox_fun
+
+# clone code
+git clone https://github.com/aigc-apps/CogVideoX-Fun.git
+
+# enter video_caption
+cd CogVideoX-Fun/cogvideox/video_caption
+```
+
+### Data Preprocessing
+#### Data Preparation
+Place the downloaded videos into a folder under [datasets](./datasets/) (preferably without nested structures, as the video names are used as unique IDs in subsequent processes).
+Taking Panda-70M as an example, the entire dataset directory structure is shown as follows:
+```
+📦 datasets/
+├── 📂 panda_70m/
+│   ├── 📂 videos/
+│   │   ├── 📂 data/
+│   │   │   └── 📄 --C66yU3LjM_2.mp4
+│   │   │   └── 📄 ...
+```
+
+#### Video Splitting
+CogVideoX-Fun utilizes [PySceneDetect](https://github.com/Breakthrough/PySceneDetect) to identify scene changes within the video
+and performs video splitting via FFmpeg based on certain threshold values to ensure consistency of the video clip.
+Video clips shorter than 3 seconds will be discarded, and those longer than 10 seconds will be splitted recursively.
+
+The entire workflow of video splitting is in the [stage_1_video_splitting.sh](./scripts/stage_1_video_splitting.sh).
+After running
+```shell
+sh scripts/stage_1_video_splitting.sh
+```
+the video clips are obtained in `cogvideox/video_caption/datasets/panda_70m/videos_clips/data/`.
+
+#### Video Filtering
+Based on the videos obtained in the previous step, CogVideoX-Fun provides a simple yet effective pipeline to filter out high-quality videos for recaptioning.
+The overall process is as follows:
+
+- Aesthetic filtering: Filter out videos with poor content (blurry, dim, etc.) by calculating the average aesthetic score of uniformly sampled 4 frames via [aesthetic-predictor-v2-5](https://github.com/discus0434/aesthetic-predictor-v2-5).
+- Text filtering: Use [EasyOCR](https://github.com/JaidedAI/EasyOCR) to calculate the text area proportion of the middle frame to filter out videos with a large area of text.
+- Motion filtering: Calculate interframe optical flow differences to filter out videos that move too slowly or too quickly.
+
+The entire workflow of video filtering is in the [stage_2_video_filtering.sh](./scripts/stage_2_video_filtering.sh).
+After running
+```shell
+sh scripts/stage_2_video_filtering.sh
+```
+the aesthetic score, text score, and motion score of videos will be saved in the corresponding meta files in the folder `cogvideox/video_caption/datasets/panda_70m/videos_clips/`.
+
+> [!NOTE]
+> The computation of the aesthetic score depends on the [google/siglip-so400m-patch14-384 model](https://huggingface.co/google/siglip-so400m-patch14-384).
+Please run `HF_ENDPOINT=https://hf-mirror.com sh scripts/stage_2_video_filtering.sh` if you cannot access to huggingface.com.
+
+
+#### Video Recaptioning
+After obtaining the aboved high-quality filtered videos, CogVideoX-Fun utilizes [VILA1.5](https://github.com/NVlabs/VILA) to perform video recaptioning. 
+Subsequently, the recaptioning results are rewritten by LLMs to better meet with the requirements of video generation tasks. 
+Finally, an advanced VideoCLIPXL model is developed to filter out video-caption pairs with poor alignment, resulting in the final training dataset.
+
+Please download the video caption model from [VILA1.5](https://huggingface.co/collections/Efficient-Large-Model/vila-on-pre-training-for-visual-language-models-65d8022a3a52cd9bcd62698e) of the appropriate size based on the GPU memory of your machine.
+For A100 with 40G VRAM, you can download [VILA1.5-40b-AWQ](https://huggingface.co/Efficient-Large-Model/VILA1.5-40b-AWQ) by running
+```shell
+# Add HF_ENDPOINT=https://hf-mirror.com before the command if you cannot access to huggingface.com
+huggingface-cli download Efficient-Large-Model/VILA1.5-40b-AWQ --local-dir-use-symlinks False --local-dir /PATH/TO/VILA_MODEL
+```
+
+Optionally, you can prepare local LLMs to rewrite the recaption results.
+For example, you can download [Meta-Llama-3-8B-Instruct](https://huggingface.co/NousResearch/Meta-Llama-3-8B-Instruct) by running
+```shell
+# Add HF_ENDPOINT=https://hf-mirror.com before the command if you cannot access to huggingface.com
+huggingface-cli download NousResearch/Meta-Llama-3-8B-Instruct --local-dir-use-symlinks False --local-dir /PATH/TO/REWRITE_MODEL
+```
+
+The entire workflow of video recaption is in the [stage_3_video_recaptioning.sh](./scripts/stage_3_video_recaptioning.sh).
+After running
+```shell
+VILA_MODEL_PATH=/PATH/TO/VILA_MODEL REWRITE_MODEL_PATH=/PATH/TO/REWRITE_MODEL sh scripts/stage_3_video_recaptioning.sh
+``` 
+the final train file is obtained in `cogvideox/video_caption/datasets/panda_70m/videos_clips/meta_train_info.json`.
+
+
+### Beautiful Prompt (For CogVideoX-Fun Inference)
+Beautiful Prompt aims to rewrite and beautify the user-uploaded prompt via LLMs, mapping it to the style of CogVideoX-Fun's training captions,
+making it more suitable as the inference prompt and thus improving the quality of the generated videos.
+We support batched inference with local LLMs or OpenAI compatible server based on [vLLM](https://github.com/vllm-project/vllm) for beautiful prompt.
+
+#### Batched Inference
+1. Prepare original prompts in a jsonl file `cogvideox/video_caption/datasets/original_prompt.jsonl` with the following format:
+    ```json
+    {"prompt": "A stylish woman in a black leather jacket, red dress, and boots walks confidently down a damp Tokyo street."}
+    {"prompt": "An underwater world with realistic fish and other creatures of the sea."}
+    {"prompt": "a monarch butterfly perched on a tree trunk in the forest."}
+    {"prompt": "a child in a room with a bottle of wine and a lamp."}
+    {"prompt": "two men in suits walking down a hallway."}
+    ```
+
+2. Then you can perform beautiful prompt by running
+    ```shell
+    # Meta-Llama-3-8B-Instruct is sufficient for this task.
+    # Download it from https://huggingface.co/NousResearch/Meta-Llama-3-8B-Instruct or https://www.modelscope.cn/models/LLM-Research/Meta-Llama-3-8B-Instruct to /path/to/your_llm
+
+    python caption_rewrite.py \
+        --video_metadata_path datasets/original_prompt.jsonl \
+        --caption_column "prompt" \
+        --batch_size 1 \
+        --model_name /path/to/your_llm \
+        --prompt prompt/beautiful_prompt.txt \
+        --prefix '"detailed description": ' \
+        --saved_path datasets/beautiful_prompt.jsonl \
+        --saved_freq 1
+    ```
+
+#### OpenAI Server
++ You can request OpenAI compatible server to perform beautiful prompt by running
+    ```shell
+    OPENAI_API_KEY="your_openai_api_key" OPENAI_BASE_URL="your_openai_base_url" python beautiful_prompt.py \
+        --model "your_model_name" \
+        --prompt "your_prompt"
+    ```
+
++ You can also deploy the OpenAI Compatible Server locally using vLLM. For example:
+    ```shell
+    # Meta-Llama-3-8B-Instruct is sufficient for this task.
+    # Download it from https://huggingface.co/NousResearch/Meta-Llama-3-8B-Instruct or https://www.modelscope.cn/models/LLM-Research/Meta-Llama-3-8B-Instruct to /path/to/your_llm
+
+    # deploy the OpenAI compatible server
+    python -m vllm.entrypoints.openai.api_server serve /path/to/your_llm --dtype auto --api-key "your_api_key"
+    ```
+
+    Then you can perform beautiful prompt by running
+    ```shell
+    python -m beautiful_prompt.py \
+        --model /path/to/your_llm \
+        --prompt "your_prompt" \
+        --base_url "http://localhost:8000/v1" \
+        --api_key "your_api_key"
+    ```
