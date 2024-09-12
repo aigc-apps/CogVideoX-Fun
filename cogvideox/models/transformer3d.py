@@ -90,6 +90,7 @@ class CogVideoXBlock(nn.Module):
         ff_bias: bool = True,
         attention_out_bias: bool = True,
         swa: bool = False,
+        window_size: int = 1024,
     ):
         super().__init__()
 
@@ -104,7 +105,7 @@ class CogVideoXBlock(nn.Module):
             eps=1e-6,
             bias=attention_bias,
             out_bias=attention_out_bias,
-            processor=CogVideoXSWAAttnProcessor2_0() if swa else CogVideoXAttnProcessor2_0(),
+            processor=CogVideoXSWAAttnProcessor2_0(window_size) if swa else CogVideoXAttnProcessor2_0(),
         )
 
         # 2. Feed Forward
@@ -248,6 +249,7 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         temporal_interpolation_scale: float = 1.0,
         use_rotary_positional_embeddings: bool = False,
         swa: bool = False,
+        window_size: int = 1024,
     ):
         super().__init__()
         inner_dim = num_attention_heads * attention_head_dim
@@ -296,6 +298,7 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                     norm_elementwise_affine=norm_elementwise_affine,
                     norm_eps=norm_eps,
                     swa=swa,
+                    window_size=window_size,
                 )
                 for _ in range(num_layers)
             ]
