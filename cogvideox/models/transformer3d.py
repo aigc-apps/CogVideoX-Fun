@@ -488,9 +488,6 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                     height // p, 
                     width // p,
                     **ckpt_kwargs,
-                    num_frames=num_frames, 
-                    height=height // p, 
-                    width=width // p,
                 )
             else:
                 hidden_states, encoder_hidden_states = block(
@@ -498,6 +495,9 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                     encoder_hidden_states=encoder_hidden_states,
                     temb=emb,
                     image_rotary_emb=image_rotary_emb,
+                    num_frames=num_frames, 
+                    height=height // p, 
+                    width=width // p,
                 )
 
         if not self.config.use_rotary_positional_embeddings:
