@@ -20,8 +20,8 @@ import gc
 import logging
 import math
 import os
-import shutil
 import pickle
+import shutil
 import sys
 
 import accelerate
@@ -35,10 +35,10 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.state import AcceleratorState
 from accelerate.utils import ProjectConfiguration, set_seed
-from diffusers import AutoencoderKL, DDPMScheduler, AutoencoderKLCogVideoX
+from diffusers import AutoencoderKL, DDPMScheduler
+from diffusers.models.embeddings import get_3d_rotary_pos_embed
 from diffusers.optimization import get_scheduler
 from diffusers.training_utils import EMAModel
-from diffusers.models.embeddings import get_3d_rotary_pos_embed
 from diffusers.utils import check_min_version, deprecate, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 from diffusers.utils.torch_utils import is_compiled_module
@@ -64,16 +64,18 @@ for project_root in project_roots:
     sys.path.insert(0, project_root) if project_root not in sys.path else None
 
 from cogvideox.data.bucket_sampler import (ASPECT_RATIO_512,
-                                             ASPECT_RATIO_RANDOM_CROP_512,
-                                             ASPECT_RATIO_RANDOM_CROP_PROB,
-                                             AspectRatioBatchImageVideoSampler,
-                                             RandomSampler, get_closest_ratio)
+                                           ASPECT_RATIO_RANDOM_CROP_512,
+                                           ASPECT_RATIO_RANDOM_CROP_PROB,
+                                           AspectRatioBatchImageVideoSampler,
+                                           RandomSampler, get_closest_ratio)
 from cogvideox.data.dataset_image_video import (ImageVideoDataset,
-                                                  ImageVideoSampler,
-                                                  get_random_mask)
+                                                ImageVideoSampler,
+                                                get_random_mask)
+from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_Fun_Pipeline_Inpaint
+from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
+    CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 
 if is_wandb_available():
@@ -1526,7 +1528,7 @@ def main():
                         (grid_height, grid_width), base_size_width, base_size_height
                     )
                     freqs_cos, freqs_sin = get_3d_rotary_pos_embed(
-                        embed_dim=transformer3d.config.attention_head_dim,
+                        embed_dim=unwrap_model(transformer3d).config.attention_head_dim,
                         crops_coords=grid_crops_coords,
                         grid_size=(grid_height, grid_width),
                         temporal_size=num_frames,

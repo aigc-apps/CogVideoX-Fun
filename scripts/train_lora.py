@@ -36,7 +36,7 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.state import AcceleratorState
 from accelerate.utils import ProjectConfiguration, set_seed
-from diffusers import AutoencoderKL, AutoencoderKLCogVideoX, DDPMScheduler
+from diffusers import AutoencoderKL, DDPMScheduler
 from diffusers.models.embeddings import get_3d_rotary_pos_embed
 from diffusers.optimization import get_scheduler
 from diffusers.training_utils import EMAModel
@@ -70,14 +70,16 @@ from cogvideox.data.bucket_sampler import (ASPECT_RATIO_512,
                                            AspectRatioBatchImageVideoSampler,
                                            AspectRatioBatchSampler,
                                            RandomSampler, get_closest_ratio)
-from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.data.dataset_image import CC15M
 from cogvideox.data.dataset_image_video import (ImageVideoDataset,
                                                 ImageVideoSampler,
                                                 get_random_mask)
 from cogvideox.data.dataset_video import VideoDataset, WebVid10M
+from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
+from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
+from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
+    CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.utils.lora_utils import create_network, merge_lora, unmerge_lora
 from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 
@@ -1480,7 +1482,7 @@ def main():
                         (grid_height, grid_width), base_size_width, base_size_height
                     )
                     freqs_cos, freqs_sin = get_3d_rotary_pos_embed(
-                        embed_dim=transformer3d.config.attention_head_dim,
+                        embed_dim=unwrap_model(transformer3d).config.attention_head_dim,
                         crops_coords=grid_crops_coords,
                         grid_size=(grid_height, grid_width),
                         temporal_size=num_frames,

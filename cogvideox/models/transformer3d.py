@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 import os
 import json
 import torch
+import glob
 import torch.nn.functional as F
 from torch import nn
 
@@ -517,13 +518,19 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         model = cls.from_config(config, **transformer_additional_kwargs)
         model_file = os.path.join(pretrained_model_path, WEIGHTS_NAME)
         model_file_safetensors = model_file.replace(".bin", ".safetensors")
-        if os.path.exists(model_file_safetensors):
+        if os.path.exists(model_file):
+            state_dict = torch.load(model_file, map_location="cpu")
+        elif os.path.exists(model_file_safetensors):
             from safetensors.torch import load_file, safe_open
             state_dict = load_file(model_file_safetensors)
         else:
-            if not os.path.isfile(model_file):
-                raise RuntimeError(f"{model_file} does not exist")
-            state_dict = torch.load(model_file, map_location="cpu")
+            from safetensors.torch import load_file, safe_open
+            model_files_safetensors = glob.glob(os.path.join(pretrained_model_path, "*.safetensors"))
+            state_dict = {}
+            for model_file_safetensors in model_files_safetensors:
+                _state_dict = load_file(model_file_safetensors)
+                for key in _state_dict:
+                    state_dict[key] = _state_dict[key]
         
         if model.state_dict()['patch_embed.proj.weight'].size() != state_dict['patch_embed.proj.weight'].size():
             new_shape   = model.state_dict()['patch_embed.proj.weight'].size()
