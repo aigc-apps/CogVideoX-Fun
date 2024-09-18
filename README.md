@@ -8,6 +8,7 @@ English | [简体中文](./README_zh-CN.md)
 - [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
 - [Quick Start](#quick-start)
+- [Video Result](#video-result)
 - [How to use](#how-to-use)
 - [Model zoo](#model-zoo)
 - [TODO List](#todo-list)
@@ -20,14 +21,12 @@ CogVideoX-Fun is a modified pipeline based on the CogVideoX structure, designed 
 We will support quick pull-ups from different platforms, refer to [Quick Start](#quick-start).
 
 What's New:
-- Create code! Now supporting Windows and Linux. Supports video generation at any resolution from 256x256x49 to 1024x1024x49. [ 2024.09.09 ]
+- Create code! Now supporting Windows and Linux. Supports 2b and 5b models. Supports video generation at any resolution from 256x256x49 to 1024x1024x49. [ 2024.09.09 ]
 
 Function：
 - [Data Preprocessing](#data-preprocess)
 - [Train DiT](#dit-train)
 - [Video Generation](#video-gen)
-
-These are our generated results [GALLERY](scripts/Result_Gallery.md) (Click the image below to see the video):
 
 Our UI interface is as follows:
 ![ui](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/ui.jpg)
@@ -68,9 +67,11 @@ mkdir models/Diffusion_Transformer
 mkdir models/Personalized_Model
 
 wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz
+wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-5b-InP.tar.gz
 
 cd models/Diffusion_Transformer/
 tar -xvf CogVideoX-Fun-2b-InP.tar.gz
+tar -xvf CogVideoX-Fun-5b-InP.tar.gz
 cd ../../
 ```
 
@@ -102,10 +103,92 @@ We'd better place the [weights](#model-zoo) along the specified path:
 ```
 📦 models/
 ├── 📂 Diffusion_Transformer/
-│   └── 📂 CogVideoX-Fun-2b-InP/
+│   ├── 📂 CogVideoX-Fun-2b-InP/
+│   └── 📂 CogVideoX-Fun-5b-InP/
 ├── 📂 Personalized_Model/
 │   └── your trained trainformer model / your trained lora model (for UI load)
 ```
+
+# Video Result
+The results displayed are all based on image. 
+
+### CogVideoX-5B
+
+Resolution-1024
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+Resolution-768
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+Resolution-512
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+### CogVideoX-2B
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
 
 # How to use
 
@@ -208,9 +291,10 @@ For details on setting some parameters, please refer to [Readme Train](scripts/R
 | Name | Storage Space | Url | Hugging Face | Description |
 |--|--|--|--|--|
 | CogVideoX-Fun-2b-InP.tar.gz | Before extraction:9.69 GB \/ After extraction: 13.0 GB | [Download](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz) | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-2b-InP)| Our official graph-generated video model is capable of predicting videos at multiple resolutions (512, 768, 1024, 1280) and has been trained on 144 frames at a rate of 24 frames per second. |
+| CogVideoX-Fun-5b-InP.tar.gz | Before extraction:9.69 GB \/ After extraction: 13.0 GB | [Download](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-5b-InP.tar.gz) | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-5b-InP)| Our official graph-generated video model is capable of predicting videos at multiple resolutions (512, 768, 1024, 1280) and has been trained on 144 frames at a rate of 24 frames per second. |
 
 # TODO List
-- Support CogVideoX-5b.
+- Support Chinese.
 
 # Reference
 - CogVideo: https://github.com/THUDM/CogVideo/
@@ -220,3 +304,5 @@ For details on setting some parameters, please refer to [Readme Train](scripts/R
 This project is licensed under the [Apache License (Version 2.0)](https://github.com/modelscope/modelscope/blob/master/LICENSE).
 
 The CogVideoX-2B model (including its corresponding Transformers module and VAE module) is released under the [Apache 2.0 License](LICENSE).
+
+The CogVideoX-5B model (Transformers module) is released under the [CogVideoX LICENSE](https://huggingface.co/THUDM/CogVideoX-5b/blob/main/LICENSE).

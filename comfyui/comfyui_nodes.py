@@ -58,6 +58,7 @@ class LoadCogVideoX_Fun_Model:
                 "model": (
                     [ 
                         'CogVideoX-Fun-2b-InP',
+                        'CogVideoX-Fun-5b-InP',
                     ],
                     {
                         "default": 'CogVideoX-Fun-2b-InP',
