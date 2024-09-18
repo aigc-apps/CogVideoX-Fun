@@ -1132,7 +1132,7 @@ def post_eas(
 
 
 class CogVideoX_I2VController_EAS:
-    def __init__(self, edition, config_path, model_name, savedir_sample):
+    def __init__(self, model_name, savedir_sample):
         self.savedir_sample = savedir_sample
         os.makedirs(self.savedir_sample, exist_ok=True)
 
