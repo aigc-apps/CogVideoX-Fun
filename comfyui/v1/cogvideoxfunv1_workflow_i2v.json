@@ -115,7 +115,7 @@
     },
     {
       "id": 75,
-      "type": "TextBox",
+      "type": "CogVideoX_FUN_TextBox",
       "pos": [
         250,
         -50
@@ -140,7 +140,7 @@
       ],
       "title": "Positive Prompt（正向提示词）",
       "properties": {
-        "Node name for S&R": "TextBox"
+        "Node name for S&R": "CogVideoX_FUN_TextBox"
       },
       "widgets_values": [
         "fireworks display over night city. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic."
@@ -148,7 +148,7 @@
     },
     {
       "id": 73,
-      "type": "TextBox",
+      "type": "CogVideoX_FUN_TextBox",
       "pos": [
         250,
         160
@@ -173,7 +173,7 @@
       ],
       "title": "Negtive Prompt（反向提示词）",
       "properties": {
-        "Node name for S&R": "TextBox"
+        "Node name for S&R": "CogVideoX_FUN_TextBox"
       },
       "widgets_values": [
         "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. "

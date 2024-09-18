@@ -27,7 +27,7 @@ from transformers import (CLIPImageProcessor, CLIPVisionModelWithProjection,
                           T5EncoderModel, T5Tokenizer)
 
 from cogvideox.data.bucket_sampler import ASPECT_RATIO_512, get_closest_ratio
-from ..models.autoencoder_magvit import AutoencoderKLCogVideoX
+from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
 from cogvideox.pipeline.pipeline_cogvideox_inpaint import \

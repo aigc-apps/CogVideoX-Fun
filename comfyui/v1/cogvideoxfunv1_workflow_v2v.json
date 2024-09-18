@@ -156,7 +156,7 @@
     },
     {
       "id": 73,
-      "type": "TextBox",
+      "type": "CogVideoX_FUN_TextBox",
       "pos": [
         250,
         160
@@ -181,7 +181,7 @@
       ],
       "title": "Negtive Prompt（反向提示词）",
       "properties": {
-        "Node name for S&R": "TextBox"
+        "Node name for S&R": "CogVideoX_FUN_TextBox"
       },
       "widgets_values": [
         "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. "
@@ -189,7 +189,7 @@
     },
     {
       "id": 75,
-      "type": "TextBox",
+      "type": "CogVideoX_FUN_TextBox",
       "pos": [
         250,
         -50
@@ -214,7 +214,7 @@
       ],
       "title": "Positive Prompt（正向提示词）",
       "properties": {
-        "Node name for S&R": "TextBox"
+        "Node name for S&R": "CogVideoX_FUN_TextBox"
       },
       "widgets_values": [
         "A beautiful woman is playing the guitar. The video quality is high and the picture is clear. High quality, masterpiece, the best quality, high resolution, ultra careful."

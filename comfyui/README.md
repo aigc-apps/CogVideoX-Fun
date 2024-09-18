@@ -36,7 +36,7 @@ python install.py
 ## Node types
 - **LoadCogVideoX_Fun_Model**
     - Loads the CogVideoX-Fun model
-- **TextBox**
+- **CogVideoX_FUN_TextBox**
     - Write the prompt for CogVideoX-Fun model
 - **CogVideoX_Fun_I2VSampler**
     - CogVideoX-Fun Sampler for Image to Video 

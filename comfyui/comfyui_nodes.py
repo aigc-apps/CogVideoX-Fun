@@ -184,7 +184,7 @@ class LoadCogVideoX_Fun_Lora:
         else:
             return (cogvideoxfun_model,)
 
-class TextBox:
+class CogVideoX_FUN_TextBox:
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -559,7 +559,7 @@ class CogVideoX_Fun_V2VSampler:
         return (videos,)   
 
 NODE_CLASS_MAPPINGS = {
-    "TextBox": TextBox,
+    "CogVideoX_FUN_TextBox": CogVideoX_FUN_TextBox,
     "LoadCogVideoX_Fun_Model": LoadCogVideoX_Fun_Model,
     "LoadCogVideoX_Fun_Lora": LoadCogVideoX_Fun_Lora,
     "CogVideoX_Fun_I2VSampler": CogVideoX_Fun_I2VSampler,
@@ -569,7 +569,7 @@ NODE_CLASS_MAPPINGS = {
 
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "TextBox": "TextBox",
+    "CogVideoX_FUN_TextBox": "CogVideoX_FUN_TextBox",
     "LoadCogVideoX_Fun_Model": "Load CogVideoX-Fun Model",
     "LoadCogVideoX_Fun_Lora": "Load CogVideoX-Fun Lora",
     "CogVideoX_Fun_I2VSampler": "CogVideoX-Fun Sampler for Image to Video",
