@@ -42,7 +42,7 @@ Aliyun provide free GPU time in [Freetier](https://free.aliyun.com/?product=9602
 
 #### b. From ComfyUI
 Our ComfyUI is as follows, please refer to [ComfyUI README](comfyui/README.md) for details.
-![workflow graph](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/comfyui_i2v.jpg)
+![workflow graph](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/cogvideoxfunv1_workflow_i2v.jpg)
 
 #### c. From docker
 If you are using docker, please make sure that the graphics card driver and CUDA environment have been installed correctly in your machine.
@@ -119,16 +119,16 @@ Resolution-1024
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000001.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/ec749326-b529-453f-a4b4-f587875dff64" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000002.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/84df4178-f493-4aa8-a888-d2020338da82" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000003.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/c66c139d-94d3-4930-985b-60e3e0600d8f" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000004.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/647c0e0c-28d6-473e-b4eb-a30197dddefc" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
@@ -138,16 +138,16 @@ Resolution-768
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000001.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/647d45b0-4253-4438-baf3-f692789bde78" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000002.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/e5a5a948-5c34-445d-9446-324a666a6a33" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000003.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/0e605797-4a86-4e0c-8589-40ed686d97a4" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000004.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/5356bf79-0a3b-4caf-ac31-2d796e20e429" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
@@ -157,16 +157,16 @@ Resolution-512
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000001.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/5a9f3457-fe82-4082-8494-d8f4f8db75e9" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000002.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/ca6874b8-41d1-4f02-bee3-4fc886f309ad" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000003.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/9216b348-2c80-4eab-9c1c-dd3a54b7ea1e" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000004.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/e99ec495-655f-44d8-afa7-3ad0a14f9975" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
@@ -176,16 +176,16 @@ Resolution-512
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000001.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/d329b4d4-f08f-4e77-887e-049cfc93a908" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000002.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/dd7fa2d5-9871-436c-ae5a-44f1494c9c9f" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000003.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/c24a2fa2-2fe3-4277-aa9f-e812a2cf0a4e" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000004.mp4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/573edac3-8bd0-4e95-82df-bcfdcba9a73f" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
