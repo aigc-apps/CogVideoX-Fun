@@ -82,40 +82,6 @@
       ]
     },
     {
-      "id": 87,
-      "type": "LoadCogVideoX_Fun_Model",
-      "pos": [
-        302,
-        -285
-      ],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "cogvideoxfun_model",
-          "type": "CogVideoXFUNSMODEL",
-          "links": [
-            49
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadCogVideoX_Fun_Model"
-      },
-      "widgets_values": [
-        "CogVideoX-Fun-2b-InP",
-        false,
-        "fp16"
-      ]
-    },
-    {
       "id": 75,
       "type": "TextBox",
       "pos": [
@@ -127,7 +93,7 @@
         "1": 156.71620178222656
       },
       "flags": {},
-      "order": 4,
+      "order": 3,
       "mode": 0,
       "outputs": [
         {
@@ -273,14 +239,48 @@
           "hidden": false,
           "paused": false,
           "params": {
-            "filename": "EasyAnimate_00039.mp4",
+            "filename": "CogVideoX-Fun_00004.mp4",
             "subfolder": "",
             "type": "output",
             "format": "video/h264-mp4",
-            "frame_rate": 24
+            "frame_rate": 8
           }
         }
       }
+    },
+    {
+      "id": 87,
+      "type": "LoadCogVideoX_Fun_Model",
+      "pos": [
+        302,
+        -285
+      ],
+      "size": {
+        "0": 315,
+        "1": 106
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "cogvideoxfun_model",
+          "type": "CogVideoXFUNSMODEL",
+          "links": [
+            49
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadCogVideoX_Fun_Model"
+      },
+      "widgets_values": [
+        "CogVideoX-Fun-2b-InP",
+        false,
+        "bf16"
+      ]
     }
   ],
   "links": [

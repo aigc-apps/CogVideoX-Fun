@@ -8,6 +8,7 @@
 - [目录](#目录)
 - [简介](#简介)
 - [快速启动](#快速启动)
+- [视频作品](#视频作品)
 - [如何使用](#如何使用)
 - [模型地址](#模型地址)
 - [未来计划](#未来计划)
@@ -20,14 +21,12 @@ CogVideoX-Fun是一个基于CogVideoX结构修改后的的pipeline，是一个�
 我们会逐渐支持从不同平台快速启动，请参阅 [快速启动](#快速启动)。
 
 新特性：
-- 创建代码！现在支持 Windows 和 Linux。支持最大256x256x49到1024x1024x49的任意分辨率的视频生成。[ 2024.09.09 ]
+- 创建代码！现在支持 Windows 和 Linux。支持2b与5b最大256x256x49到1024x1024x49的任意分辨率的视频生成。[ 2024.09.09 ]
 
 功能概览：
 - [数据预处理](#data-preprocess)
 - [训练DiT](#dit-train)
 - [模型生成](#video-gen)
-
-这些是我们的生成结果 [GALLERY](scripts/Result_Gallery.md) (点击下方的图片可查看视频):
 
 我们的ui界面如下:
 ![ui](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/ui.jpg)
@@ -35,7 +34,11 @@ CogVideoX-Fun是一个基于CogVideoX结构修改后的的pipeline，是一个�
 # 快速启动
 ### 1. 云使用: AliyunDSW/Docker
 #### a. 通过阿里云 DSW
-正在路上
+DSW 有免费 GPU 时间，用户可申请一次，申请后3个月内有效。
+
+阿里云在[Freetier](https://free.aliyun.com/?product=9602825&crowd=enterprise&spm=5176.28055625.J_5831864660.1.e939154aRgha4e&scm=20140722.M_9974135.P_110.MO_1806-ID_9974135-MID_9974135-CID_30683-ST_8512-V_1)提供免费GPU时间，获取并在阿里云PAI-DSW中使用，5分钟内即可启动CogVideoX-Fun。
+
+[![DSW Notebook](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/easyanimate/asset/dsw.png)](https://gallery.pai-ml.com/#/preview/deepLearning/cv/cogvideox_fun)
 
 #### b. 通过ComfyUI
 我们的ComfyUI界面如下，具体查看[ComfyUI README](comfyui/README.md)。
@@ -62,9 +65,11 @@ mkdir models/Diffusion_Transformer
 mkdir models/Personalized_Model
 
 wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz
+wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-5b-InP.tar.gz
 
 cd models/Diffusion_Transformer/
 tar -xvf CogVideoX-Fun-2b-InP.tar.gz
+tar -xvf CogVideoX-Fun-5b-InP.tar.gz
 cd ../../
 ```
 
@@ -96,10 +101,93 @@ Linux 的详细信息：
 ```
 📦 models/
 ├── 📂 Diffusion_Transformer/
-│   └── 📂 CogVideoX-Fun-2b-InP/
+│   ├── 📂 CogVideoX-Fun-2b-InP/
+│   └── 📂 CogVideoX-Fun-5b-InP/
 ├── 📂 Personalized_Model/
 │   └── your trained trainformer model / your trained lora model (for UI load)
 ```
+
+# 视频作品
+所展示的结果都是图生视频获得。
+
+### CogVideoX-5B
+
+1024分辨率
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_1024/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+768分辨率
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_768/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+512分辨率
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/5b_512/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+### CogVideoX-2B
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000001.mp4" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000002.mp4" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000003.mp4" width="100%" controls autoplay loop></video>
+     </td>
+      <td>
+          <video src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/2b_768/00000004.mp4" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
 
 # 如何使用
 
@@ -202,9 +290,10 @@ sh scripts/train.sh
 | 名称 | 存储空间 | 下载地址 | Hugging Face | 描述 |
 |--|--|--|--|--|
 | CogVideoX-Fun-2b-InP.tar.gz | 解压前 9.69 GB / 解压后 13.0 GB | [Download](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz) | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-2b-InP)| 官方的图生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以144帧、每秒24帧进行训练 |
+| CogVideoX-Fun-5b-InP.tar.gz | 解压前 9.69 GB / 解压后 13.0 GB | [Download](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-5b-InP.tar.gz) | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-5b-InP)| 官方的图生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以144帧、每秒24帧进行训练 |
 
 # 未来计划
-- 支持CogVideoX-5b。
+- 支持中文。
 
 # 参考文献
 - CogVideo: https://github.com/THUDM/CogVideo/
@@ -214,3 +303,5 @@ sh scripts/train.sh
 本项目采用 [Apache License (Version 2.0)](https://github.com/modelscope/modelscope/blob/master/LICENSE).
 
 CogVideoX-2B 模型 (包括其对应的Transformers模块，VAE模块) 根据 [Apache 2.0 协议](LICENSE) 许可证发布。
+
+CogVideoX-5B 模型（Transformer 模块）在[CogVideoX许可证](https://huggingface.co/THUDM/CogVideoX-5b/blob/main/LICENSE)下发布.

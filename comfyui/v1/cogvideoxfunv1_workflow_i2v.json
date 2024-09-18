@@ -114,40 +114,6 @@
       "bgcolor": "#653"
     },
     {
-      "id": 83,
-      "type": "LoadCogVideoX_Fun_Model",
-      "pos": [
-        300,
-        -294
-      ],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "cogvideoxfun_model",
-          "type": "CogVideoXFUNSMODEL",
-          "links": [
-            42
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadCogVideoX_Fun_Model"
-      },
-      "widgets_values": [
-        "CogVideoX-Fun-2b-InP",
-        false,
-        "fp16"
-      ]
-    },
-    {
       "id": 75,
       "type": "TextBox",
       "pos": [
@@ -159,7 +125,7 @@
         "1": 156.71620178222656
       },
       "flags": {},
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "outputs": [
         {
@@ -192,7 +158,7 @@
         "1": 183.83506774902344
       },
       "flags": {},
-      "order": 6,
+      "order": 5,
       "mode": 0,
       "outputs": [
         {
@@ -221,7 +187,7 @@
         93
       ],
       "size": {
-        "0": 317.4000244140625,
+        "0": 336,
         "1": 282
       },
       "flags": {},
@@ -346,14 +312,48 @@
           "hidden": false,
           "paused": false,
           "params": {
-            "filename": "EasyAnimate_00040.mp4",
+            "filename": "CogVideoX-Fun_00003.mp4",
             "subfolder": "",
             "type": "output",
             "format": "video/h264-mp4",
-            "frame_rate": 24
+            "frame_rate": 8
           }
         }
       }
+    },
+    {
+      "id": 83,
+      "type": "LoadCogVideoX_Fun_Model",
+      "pos": [
+        300,
+        -294
+      ],
+      "size": {
+        "0": 315,
+        "1": 106
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "cogvideoxfun_model",
+          "type": "CogVideoXFUNSMODEL",
+          "links": [
+            42
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadCogVideoX_Fun_Model"
+      },
+      "widgets_values": [
+        "CogVideoX-Fun-2b-InP",
+        false,
+        "bf16"
+      ]
     }
   ],
   "links": [
