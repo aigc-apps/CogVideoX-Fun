@@ -32,10 +32,10 @@ def post_infer(generation_method, length_slider, url='http://127.0.0.1:7860'):
         "motion_module_path": "none",
         "lora_model_path": "none", 
         "lora_alpha_slider": 0.55, 
-        "prompt_textbox": "This video shows Mount saint helens, washington - the stunning scenery of a rocky mountains during golden hours - wide shot. A soaring drone footage captures the majestic beauty of a coastal cliff, its red and yellow stratified rock faces rich in color and against the vibrant turquoise of the sea.", 
-        "negative_prompt_textbox": "Strange motion trajectory, a poor composition and deformed video, worst quality, normal quality, low quality, low resolution, duplicate and ugly, strange body structure, long and strange neck, bad teeth, bad eyes, bad limbs, bad hands, rotating camera, blurry camera, shaking camera", 
+        "prompt_textbox": "A young woman with beautiful and clear eyes and blonde hair standing and white dress in a forest wearing a crown. She seems to be lost in thought, and the camera focuses on her face. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic.", 
+        "negative_prompt_textbox": "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. ", 
         "sampler_dropdown": "Euler", 
-        "sample_step_slider": 30, 
+        "sample_step_slider": 50, 
         "width_slider": 672, 
         "height_slider": 384, 
         "generation_method": "Video Generation",
@@ -55,23 +55,16 @@ if __name__ == '__main__':
     # -------------------------- #
     #  Step 1: update edition
     # -------------------------- #
-    edition = "v3"
-    outputs = post_update_edition(edition)
-    print('Output update edition: ', outputs)
-
-    # -------------------------- #
-    #  Step 2: update edition
-    # -------------------------- #
-    diffusion_transformer_path = "models/Diffusion_Transformer/cogvideox_funV3-XL-2-512x512"
+    diffusion_transformer_path = "models/Diffusion_Transformer/CogVideoX-Fun-2b-InP"
     outputs = post_diffusion_transformer(diffusion_transformer_path)
     print('Output update edition: ', outputs)
 
     # -------------------------- #
-    #  Step 3: infer
+    #  Step 2: infer
     # -------------------------- #
     # "Video Generation" and "Image Generation"
     generation_method = "Video Generation"
-    length_slider = 72
+    length_slider = 49
     outputs = post_infer(generation_method, length_slider)
     
     # Get decoded data
