@@ -34,7 +34,6 @@ accelerate launch --mixed_precision="bf16" scripts/train.py \
   --lr_warmup_steps=100 \
   --seed=42 \
   --output_dir="output_dir" \
-  --enable_xformers_memory_efficient_attention \
   --gradient_checkpointing \
   --mixed_precision="bf16" \
   --adam_weight_decay=3e-2 \
@@ -81,7 +80,6 @@ accelerate launch --use_deepspeed --deepspeed_config_file config/zero_stage2_con
   --lr_warmup_steps=100 \
   --seed=42 \
   --output_dir="output_dir" \
-  --enable_xformers_memory_efficient_attention \
   --gradient_checkpointing \
   --mixed_precision="bf16" \
   --adam_weight_decay=3e-2 \
