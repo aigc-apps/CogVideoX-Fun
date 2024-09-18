@@ -86,7 +86,7 @@ def infer_forward_api(_: gr.Blocks, app: FastAPI, controller):
         base_resolution = datas.get('base_resolution', 512)
         is_image = datas.get('is_image', False)
         generation_method = datas.get('generation_method', False)
-        length_slider = datas.get('length_slider', 144)
+        length_slider = datas.get('length_slider', 49)
         overlap_video_length = datas.get('overlap_video_length', 4)
         partial_video_length = datas.get('partial_video_length', 72)
         cfg_scale_slider = datas.get('cfg_scale_slider', 6)
