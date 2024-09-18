@@ -101,7 +101,13 @@ class LoadCogVideoX_Fun_Model:
             if os.path.exists(eas_cache_dir):
                 model_path = os.path.join(eas_cache_dir, 'CogVideoX_Fun', model)
             else:
-                print(f"Please download cogvideoxfun model to: {model_path}")
+                model_path = os.path.join(folder_paths.models_dir, "CogVideoX-Fun", model)
+                if not os.path.exists(model_path):
+                    if os.path.exists(eas_cache_dir):
+                        model_path = os.path.join(eas_cache_dir, 'CogVideoX_Fun', model)
+                    else:
+                        # Detect model is existing or not 
+                        print(f"Please download cogvideoxfun model to: {model_path}")
 
         vae = AutoencoderKLCogVideoX.from_pretrained(
             model_path, 

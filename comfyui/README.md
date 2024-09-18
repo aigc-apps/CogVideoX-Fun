@@ -26,7 +26,7 @@ cd CogVideoX-Fun/
 python install.py
 ```
 
-### 2. Download models into `ComfyUI/models/CogVideoX-Fun/`
+### 2. Download models into `ComfyUI/models/CogVideoX_Fun/`
 
 | Name | Storage Space | Url | Hugging Face | Description |
 |--|--|--|--|--|
