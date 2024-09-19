@@ -51,8 +51,8 @@ validation_image_start  = "asset/1.png"
 validation_image_end    = None
 
 # prompts
-prompt                  = "The dog is looking at camera and smiling. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic."
-negative_prompt         = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory.  "
+prompt                  = "The dog is shaking head. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic."
+negative_prompt         = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. "
 guidance_scale          = 6.0
 seed                    = 43
 num_inference_steps     = 50
