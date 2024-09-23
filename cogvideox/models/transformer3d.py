@@ -32,6 +32,8 @@ from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from diffusers.models.modeling_utils import ModelMixin
 from diffusers.models.normalization import AdaLayerNorm, CogVideoXLayerNormZero
 
+from cogvideox.models.attention_processor import CogVideoXSWAAttnProcessor2_0
+
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -126,6 +128,8 @@ class CogVideoXBlock(nn.Module):
         ff_inner_dim: Optional[int] = None,
         ff_bias: bool = True,
         attention_out_bias: bool = True,
+        swa: bool = False,
+        window_size: int = 1024,
     ):
         super().__init__()
 
@@ -140,7 +144,7 @@ class CogVideoXBlock(nn.Module):
             eps=1e-6,
             bias=attention_bias,
             out_bias=attention_out_bias,
-            processor=CogVideoXAttnProcessor2_0(),
+            processor=CogVideoXSWAAttnProcessor2_0(window_size) if swa else CogVideoXAttnProcessor2_0(),
         )
 
         # 2. Feed Forward
@@ -161,6 +165,9 @@ class CogVideoXBlock(nn.Module):
         encoder_hidden_states: torch.Tensor,
         temb: torch.Tensor,
         image_rotary_emb: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+        num_frames: int = None, 
+        height: int = None, 
+        width: int = None,
     ) -> torch.Tensor:
         text_seq_length = encoder_hidden_states.size(1)
 
@@ -174,6 +181,9 @@ class CogVideoXBlock(nn.Module):
             hidden_states=norm_hidden_states,
             encoder_hidden_states=norm_encoder_hidden_states,
             image_rotary_emb=image_rotary_emb,
+            num_frames = num_frames, 
+            height = height, 
+            width = width,
         )
 
         hidden_states = hidden_states + gate_msa * attn_hidden_states
@@ -277,6 +287,8 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         spatial_interpolation_scale: float = 1.875,
         temporal_interpolation_scale: float = 1.0,
         use_rotary_positional_embeddings: bool = False,
+        swa: bool = False,
+        window_size: int = 1024,
     ):
         super().__init__()
         inner_dim = num_attention_heads * attention_head_dim
@@ -324,6 +336,8 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                     attention_bias=attention_bias,
                     norm_elementwise_affine=norm_elementwise_affine,
                     norm_eps=norm_eps,
+                    swa=swa,
+                    window_size=window_size,
                 )
                 for _ in range(num_layers)
             ]
@@ -456,6 +470,7 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         return_dict: bool = True,
     ):
         batch_size, num_frames, channels, height, width = hidden_states.shape
+        p = self.config.patch_size
 
         # 1. Time embedding
         timesteps = timestep
@@ -508,6 +523,9 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                     encoder_hidden_states,
                     emb,
                     image_rotary_emb,
+                    num_frames, 
+                    height // p, 
+                    width // p,
                     **ckpt_kwargs,
                 )
             else:
@@ -516,6 +534,9 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                     encoder_hidden_states=encoder_hidden_states,
                     temb=emb,
                     image_rotary_emb=image_rotary_emb,
+                    num_frames=num_frames, 
+                    height=height // p, 
+                    width=width // p,
                 )
 
         if not self.config.use_rotary_positional_embeddings:
@@ -532,7 +553,6 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         hidden_states = self.proj_out(hidden_states)
 
         # 6. Unpatchify
-        p = self.config.patch_size
         output = hidden_states.reshape(batch_size, num_frames, height // p, width // p, channels, p, p)
         output = output.permute(0, 1, 4, 2, 5, 3, 6).flatten(5, 6).flatten(3, 4)
 
