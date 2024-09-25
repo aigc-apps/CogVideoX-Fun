@@ -166,7 +166,7 @@ def get_image_to_video_latent(validation_image_start, validation_image_end, vide
 
     return  input_video, input_video_mask, clip_image
 
-def get_video_to_video_latent(input_video_path, video_length, sample_size):
+def get_video_to_video_latent(input_video_path, video_length, sample_size, validation_video_mask=None):
     if type(input_video_path) is str:
         cap = cv2.VideoCapture(input_video_path)
         input_video = []
@@ -183,7 +183,15 @@ def get_video_to_video_latent(input_video_path, video_length, sample_size):
     input_video = torch.from_numpy(np.array(input_video))[:video_length]
     input_video = input_video.permute([3, 0, 1, 2]).unsqueeze(0) / 255
 
-    input_video_mask = torch.zeros_like(input_video[:, :1])
-    input_video_mask[:, :, :] = 255
+    if validation_video_mask is not None:
+        validation_video_mask = Image.open(validation_video_mask).convert('L').resize((sample_size[1], sample_size[0]))
+        input_video_mask = np.where(np.array(validation_video_mask) < 240, 0, 255)
+        
+        input_video_mask = torch.from_numpy(np.array(input_video_mask)).unsqueeze(0).unsqueeze(-1).permute([3, 0, 1, 2]).unsqueeze(0)
+        input_video_mask = torch.tile(input_video_mask, [1, 1, input_video.size()[2], 1, 1])
+        input_video_mask = input_video_mask.to(input_video.device, input_video.dtype)
+    else:
+        input_video_mask = torch.zeros_like(input_video[:, :1])
+        input_video_mask[:, :, :] = 255
 
     return  input_video, input_video_mask, None

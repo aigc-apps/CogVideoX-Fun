@@ -43,7 +43,9 @@ fps                 = 8
 # ome graphics cards, such as v100, 2080ti, do not support torch.bfloat16
 weight_dtype            = torch.bfloat16
 # If you want to generate from text, please set the validation_image_start = None and validation_image_end = None
-validation_video        = "asset/03480_03600_good_scenes.mp4"
+validation_video        = "asset/1.mp4"
+# Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70
+validation_video_mask   = None # "asset/1_mask.jpg"
 denoise_strength        = 0.70
 
 # prompts
@@ -137,7 +139,7 @@ if lora_path is not None:
     pipeline = merge_lora(pipeline, lora_path, lora_weight, "cuda")
 
 video_length = int((video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
-input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, video_length=video_length, sample_size=sample_size)
+input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, video_length=video_length, sample_size=sample_size, validation_video_mask=validation_video_mask)
 
 with torch.no_grad():
     sample = pipeline(

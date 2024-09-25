@@ -191,6 +191,7 @@ class CogVideoX_I2VController:
         start_image, 
         end_image, 
         validation_video,
+        validation_video_mask,
         denoise_strength,
         seed_textbox,
         is_api = False,
@@ -318,7 +319,7 @@ class CogVideoX_I2VController:
                         last_frames = init_frames + _partial_video_length
                 else:
                     if validation_video is not None:
-                        input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
+                        input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider), validation_video_mask=validation_video_mask)
                         strength = denoise_strength
                     else:
                         input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
@@ -557,11 +558,23 @@ def ui(low_gpu_memory_mode, weight_dtype):
                             end_image   = gr.Image(label="The image at the ending of the video (图片到视频的结束图片[非必需, Optional])", show_label=False, elem_id="i2v_end", sources="upload", type="filepath")
 
                     with gr.Column(visible = False) as video_to_video_col:
-                        validation_video = gr.Video(
-                            label="The video to convert (视频转视频的参考视频)",  show_label=True, 
-                            elem_id="v2v", sources="upload", 
-                        )
-                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=0.95, step=0.01)
+                        with gr.Row():
+                            validation_video = gr.Video(
+                                label="The video to convert (视频转视频的参考视频)",  show_label=True, 
+                                elem_id="v2v", sources="upload", 
+                            )
+                        with gr.Accordion("The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])", open=False):
+                            gr.Markdown(
+                                """
+                                - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
+                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                """
+                            )
+                            validation_video_mask = gr.Image(
+                                label="The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])",
+                                show_label=False, elem_id="v2v_mask", sources="upload", type="filepath"
+                            )
+                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
                     cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=7.0, minimum=0,   maximum=20)
                     
@@ -598,13 +611,13 @@ def ui(low_gpu_memory_mode, weight_dtype):
 
             def upload_source_method(source_method):
                 if source_method == "Text to Video (文本到视频)":
-                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
                 elif source_method == "Image to Video (图片到视频)":
-                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None)]
+                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None), gr.update(value=None)]
                 else:
-                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update()]
+                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update(), gr.update()]
             source_method.change(
-                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video]
+                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video, validation_video_mask]
             )
 
             def upload_resize_method(resize_method):
@@ -639,6 +652,7 @@ def ui(low_gpu_memory_mode, weight_dtype):
                     start_image, 
                     end_image, 
                     validation_video,
+                    validation_video_mask,
                     denoise_strength, 
                     seed_textbox,
                 ],
@@ -733,6 +747,7 @@ class CogVideoX_I2VController_Modelscope:
         start_image, 
         end_image, 
         validation_video,
+        validation_video_mask,
         denoise_strength,
         seed_textbox,
         is_api = False,
@@ -781,7 +796,7 @@ class CogVideoX_I2VController_Modelscope:
         try:
             if self.transformer.config.in_channels != self.vae.config.latent_channels:
                 if validation_video is not None:
-                    input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
+                    input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider), validation_video_mask=validation_video_mask)
                     strength = denoise_strength
                 else:
                     input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
@@ -986,11 +1001,23 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
                             end_image   = gr.Image(label="The image at the ending of the video (图片到视频的结束图片[非必需, Optional])", show_label=False, elem_id="i2v_end", sources="upload", type="filepath")
 
                     with gr.Column(visible = False) as video_to_video_col:
-                        validation_video = gr.Video(
-                            label="The video to convert (视频转视频的参考视频)",  show_label=True, 
-                            elem_id="v2v", sources="upload", 
-                        )
-                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=0.95, step=0.01)
+                        with gr.Row():
+                            validation_video = gr.Video(
+                                label="The video to convert (视频转视频的参考视频)",  show_label=True, 
+                                elem_id="v2v", sources="upload", 
+                            ) 
+                        with gr.Accordion("The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])", open=False):
+                            gr.Markdown(
+                                """
+                                - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
+                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                """
+                            )
+                            validation_video_mask = gr.Image(
+                                label="The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])",
+                                show_label=False, elem_id="v2v_mask", sources="upload", type="filepath"
+                            )
+                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
                     cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=7.0, minimum=0,   maximum=20)
                     
@@ -1025,13 +1052,13 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
 
             def upload_source_method(source_method):
                 if source_method == "Text to Video (文本到视频)":
-                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
                 elif source_method == "Image to Video (图片到视频)":
-                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None)]
+                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None), gr.update(value=None)]
                 else:
-                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update()]
+                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update(), gr.update()]
             source_method.change(
-                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video]
+                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video, validation_video_mask]
             )
 
             def upload_resize_method(resize_method):
@@ -1066,6 +1093,7 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
                     start_image, 
                     end_image, 
                     validation_video,
+                    validation_video_mask,
                     denoise_strength, 
                     seed_textbox,
                 ],
@@ -1080,7 +1108,7 @@ def post_eas(
     prompt_textbox, negative_prompt_textbox, 
     sampler_dropdown, sample_step_slider, resize_method, width_slider, height_slider,
     base_resolution, generation_method, length_slider, cfg_scale_slider, 
-    start_image, end_image, validation_video, denoise_strength, seed_textbox,
+    start_image, end_image, validation_video, validation_video_mask, denoise_strength, seed_textbox,
 ):
     if start_image is not None:
         with open(start_image, 'rb') as file:
@@ -1100,6 +1128,12 @@ def post_eas(
             validation_video_encoded_content = base64.b64encode(file_content)
             validation_video = validation_video_encoded_content.decode('utf-8')
 
+    if validation_video_mask is not None:
+        with open(validation_video_mask, 'rb') as file:
+            file_content = file.read()
+            validation_video_mask_encoded_content = base64.b64encode(file_content)
+            validation_video_mask = validation_video_mask_encoded_content.decode('utf-8')
+
     datas = {
         "base_model_path": base_model_dropdown,
         "lora_model_path": lora_model_dropdown, 
@@ -1118,6 +1152,7 @@ def post_eas(
         "start_image": start_image,
         "end_image": end_image,
         "validation_video": validation_video,
+        "validation_video_mask": validation_video_mask,
         "denoise_strength": denoise_strength,
         "seed_textbox": seed_textbox,
     }
@@ -1156,6 +1191,7 @@ class CogVideoX_I2VController_EAS:
         start_image, 
         end_image, 
         validation_video, 
+        validation_video_mask, 
         denoise_strength,
         seed_textbox
     ):
@@ -1167,7 +1203,7 @@ class CogVideoX_I2VController_EAS:
             prompt_textbox, negative_prompt_textbox, 
             sampler_dropdown, sample_step_slider, resize_method, width_slider, height_slider,
             base_resolution, generation_method, length_slider, cfg_scale_slider, 
-            start_image, end_image, validation_video, denoise_strength, 
+            start_image, end_image, validation_video, validation_video_mask, denoise_strength, 
             seed_textbox
         )
         try:
@@ -1317,11 +1353,23 @@ def ui_eas(model_name, savedir_sample):
                             end_image   = gr.Image(label="The image at the ending of the video (Optional)", show_label=True, elem_id="i2v_end", sources="upload", type="filepath")
                     
                     with gr.Column(visible = False) as video_to_video_col:
-                        validation_video = gr.Video(
-                            label="The video to convert (视频转视频的参考视频)",  show_label=True, 
-                            elem_id="v2v", sources="upload", 
-                        )
-                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=0.95, step=0.01)
+                        with gr.Row():
+                            validation_video = gr.Video(
+                                label="The video to convert (视频转视频的参考视频)",  show_label=True, 
+                                elem_id="v2v", sources="upload", 
+                            )
+                        with gr.Accordion("The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])", open=False):
+                            gr.Markdown(
+                                """
+                                - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
+                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                """
+                            )
+                            validation_video_mask = gr.Image(
+                                label="The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])",
+                                show_label=False, elem_id="v2v_mask", sources="upload", type="filepath"
+                            )
+                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
                     cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=7.0, minimum=0,   maximum=20)
                     
@@ -1356,13 +1404,13 @@ def ui_eas(model_name, savedir_sample):
 
             def upload_source_method(source_method):
                 if source_method == "Text to Video (文本到视频)":
-                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
                 elif source_method == "Image to Video (图片到视频)":
-                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None)]
+                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None), gr.update(value=None)]
                 else:
-                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update()]
+                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update(), gr.update()]
             source_method.change(
-                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video]
+                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video, validation_video_mask]
             )
 
             def upload_resize_method(resize_method):
@@ -1395,6 +1443,7 @@ def ui_eas(model_name, savedir_sample):
                     start_image, 
                     end_image, 
                     validation_video,
+                    validation_video_mask,
                     denoise_strength, 
                     seed_textbox,
                 ],
