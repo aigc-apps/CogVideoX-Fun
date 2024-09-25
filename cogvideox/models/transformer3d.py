@@ -277,6 +277,7 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         spatial_interpolation_scale: float = 1.875,
         temporal_interpolation_scale: float = 1.0,
         use_rotary_positional_embeddings: bool = False,
+        add_noise_in_inpaint_model: bool = False,
     ):
         super().__init__()
         inner_dim = num_attention_heads * attention_head_dim

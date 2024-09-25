@@ -160,7 +160,7 @@ if partial_video_length is not None:
         
         with torch.no_grad():
             sample = pipeline(
-                prompt + ". The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic. ", 
+                prompt, 
                 num_frames = _partial_video_length,
                 negative_prompt = negative_prompt,
                 height      = sample_size[0],

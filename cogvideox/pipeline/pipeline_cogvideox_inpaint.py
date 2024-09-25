@@ -177,6 +177,19 @@ def resize_mask(mask, latent, process_first_frame_only=True):
     return resized_mask
 
 
+def add_noise_to_reference_video(image, ratio=None):
+    if ratio is None:
+        sigma = torch.normal(mean=-3.0, std=0.5, size=(image.shape[0],)).to(image.device)
+        sigma = torch.exp(sigma).to(image.dtype)
+    else:
+        sigma = torch.ones((image.shape[0],)).to(image.device, image.dtype) * ratio
+    
+    image_noise = torch.randn_like(image) * sigma[:, None, None, None, None]
+    image_noise = torch.where(image==-1, torch.zeros_like(image), image_noise)
+    image = image + image_noise
+    return image
+
+
 @dataclass
 class CogVideoX_Fun_PipelineOutput(BaseOutput):
     r"""
@@ -444,7 +457,7 @@ class CogVideoX_Fun_Pipeline_Inpaint(DiffusionPipeline):
         return outputs
 
     def prepare_mask_latents(
-        self, mask, masked_image, batch_size, height, width, dtype, device, generator, do_classifier_free_guidance
+        self, mask, masked_image, batch_size, height, width, dtype, device, generator, do_classifier_free_guidance, noise_aug_strength
     ):
         # resize the mask to latents shape as we concatenate the mask to the latents
         # we do that before converting to dtype to avoid breaking in case we're using cpu_offload
@@ -463,6 +476,8 @@ class CogVideoX_Fun_Pipeline_Inpaint(DiffusionPipeline):
             mask = mask * self.vae.config.scaling_factor
 
         if masked_image is not None:
+            if self.transformer.config.add_noise_in_inpaint_model:
+                masked_image = add_noise_to_reference_video(masked_image, ratio=noise_aug_strength)
             masked_image = masked_image.to(device=device, dtype=self.vae.dtype)
             bs = 1
             new_mask_pixel_values = []
@@ -650,6 +665,7 @@ class CogVideoX_Fun_Pipeline_Inpaint(DiffusionPipeline):
         callback_on_step_end_tensor_inputs: List[str] = ["latents"],
         max_sequence_length: int = 226,
         strength: float = 1,
+        noise_aug_strength: float = 0.0563,
         comfyui_progressbar: bool = False,
     ) -> Union[CogVideoX_Fun_PipelineOutput, Tuple]:
         """
@@ -866,6 +882,7 @@ class CogVideoX_Fun_Pipeline_Inpaint(DiffusionPipeline):
                         device,
                         generator,
                         do_classifier_free_guidance,
+                        noise_aug_strength=noise_aug_strength,
                     )
                     mask_latents = resize_mask(1 - mask_condition, masked_video_latents)
                     mask_latents = mask_latents.to(masked_video_latents.device) * self.vae.config.scaling_factor

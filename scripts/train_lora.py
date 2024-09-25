@@ -79,7 +79,7 @@ from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
 from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
-    CogVideoX_Fun_Pipeline_Inpaint
+    CogVideoX_Fun_Pipeline_Inpaint, add_noise_to_reference_video
 from cogvideox.utils.lora_utils import create_network, merge_lora, unmerge_lora
 from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 
@@ -1387,6 +1387,8 @@ def main():
                         mask = 1 - mask
                         mask = resize_mask(mask, latents)
 
+                        if unwrap_model(transformer3d).config.add_noise_in_inpaint_model:
+                            mask_pixel_values = add_noise_to_reference_video(mask_pixel_values)
                         mask_pixel_values = rearrange(mask_pixel_values, "b f c h w -> b c f h w")
                         bs = args.vae_mini_batch
                         new_mask_pixel_values = []
