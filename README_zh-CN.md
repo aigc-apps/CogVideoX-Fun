@@ -23,6 +23,7 @@ CogVideoX-Fun是一个基于CogVideoX结构修改后的的pipeline，是一个�
 我们会逐渐支持从不同平台快速启动，请参阅 [快速启动](#快速启动)。
 
 新特性：
+- 重新训练i2v模型，添加Noise，使得视频的运动幅度更大。上传控制模型训练代码与Control模型。[ 2024.09.29 ]
 - 创建代码！现在支持 Windows 和 Linux。支持2b与5b最大256x256x49到1024x1024x49的任意分辨率的视频生成。[ 2024.09.18 ]
 
 功能概览：
@@ -66,10 +67,10 @@ cd CogVideoX-Fun
 mkdir models/Diffusion_Transformer
 mkdir models/Personalized_Model
 
-wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz
+wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP.tar.gz
 
 cd models/Diffusion_Transformer/
-tar -xvf CogVideoX-Fun-2b-InP.tar.gz
+tar -xvf CogVideoX-Fun-V1.1-2b-InP.tar.gz
 cd ../../
 ```
 
@@ -101,8 +102,8 @@ Linux 的详细信息：
 ```
 📦 models/
 ├── 📂 Diffusion_Transformer/
-│   ├── 📂 CogVideoX-Fun-2b-InP/
-│   └── 📂 CogVideoX-Fun-5b-InP/
+│   ├── 📂 CogVideoX-Fun-V1.1-2b-InP/
+│   └── 📂 CogVideoX-Fun-V1.1-5b-InP/
 ├── 📂 Personalized_Model/
 │   └── your trained trainformer model / your trained lora model (for UI load)
 ```
@@ -110,7 +111,7 @@ Linux 的详细信息：
 # 视频作品
 所展示的结果都是图生视频获得。
 
-### CogVideoX-Fun-5B
+### CogVideoX-Fun-V1.1-5B
 
 Resolution-1024
 
@@ -169,7 +170,33 @@ Resolution-512
   </tr>
 </table>
 
-### CogVideoX-Fun-2B
+### CogVideoX-Fun-V1.1-5B-Pose
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          Resolution-512
+      </td>
+      <td>
+          Resolution-768
+      </td>
+       <td>
+          Resolution-1024
+      </td>
+  <tr>
+      <td>
+          <video src="https://github.com/user-attachments/assets/5a9f3457-fe82-4082-8494-d8f4f8db75e9" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://github.com/user-attachments/assets/ca6874b8-41d1-4f02-bee3-4fc886f309ad" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://github.com/user-attachments/assets/9216b348-2c80-4eab-9c1c-dd3a54b7ea1e" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+### CogVideoX-Fun-V1.1-2B
 
 Resolution-768
 
@@ -190,6 +217,31 @@ Resolution-768
   </tr>
 </table>
 
+### CogVideoX-Fun-V1.1-5B-Pose
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          Resolution-512
+      </td>
+      <td>
+          Resolution-768
+      </td>
+       <td>
+          Resolution-1024
+      </td>
+  <tr>
+      <td>
+          <video src="https://github.com/user-attachments/assets/5a9f3457-fe82-4082-8494-d8f4f8db75e9" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://github.com/user-attachments/assets/ca6874b8-41d1-4f02-bee3-4fc886f309ad" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://github.com/user-attachments/assets/9216b348-2c80-4eab-9c1c-dd3a54b7ea1e" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
 
 # 如何使用
 
@@ -289,6 +341,18 @@ sh scripts/train.sh
 关于一些参数的设置细节，可以查看[Readme Train](scripts/README_TRAIN.md)与[Readme Lora](scripts/README_TRAIN_LORA.md)
 
 # 模型地址
+
+V1.1:
+
+| 名称 | 存储空间 | Hugging Face | Model Scope | 描述 |
+|--|--|--|--|--|
+| CogVideoX-Fun-V1.1-2b-InP.tar.gz | 解压前 9.7 GB / 解压后 13.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-InP) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-InP) | 官方的图生视频权重。添加了Noise，运动幅度相比于V1.0更大。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+| CogVideoX-Fun-V1.1-5b-InP.tar.gz | 解压前 16.0GB / 解压后 20.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-InP) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-InP) | 官方的图生视频权重。添加了Noise，运动幅度相比于V1.0更大。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+| CogVideoX-Fun-V1.1-2b-Pose.tar.gz | 解压前 9.7 GB / 解压后 13.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-Pose) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-Pose) | 官方的姿态控制生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+| CogVideoX-Fun-V1.1-5b-Pose.tar.gz | 解压前 16.0GB / 解压后 20.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-Pose) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-Pose) | 官方的姿态控制生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+
+V1.0:
+
 | 名称 | 存储空间 | Hugging Face | Model Scope | 描述 |
 |--|--|--|--|--|
 | CogVideoX-Fun-2b-InP.tar.gz | 解压前 9.7 GB / 解压后 13.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-2b-InP) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-2b-InP) | 官方的图生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |

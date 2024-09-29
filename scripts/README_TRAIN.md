@@ -18,7 +18,7 @@ accelerate launch --mixed_precision="bf16" scripts/train.py \
   --pretrained_model_name_or_path=$MODEL_NAME \
   --train_data_dir=$DATASET_NAME \
   --train_data_meta=$DATASET_META_NAME \
-  --image_sample_size=1280 \
+  --image_sample_size=1024 \
   --video_sample_size=256 \
   --token_sample_size=512 \
   --video_sample_stride=3 \
@@ -45,7 +45,6 @@ accelerate launch --mixed_precision="bf16" scripts/train.py \
   --random_frame_crop \
   --enable_bucket \
   --use_came \
-  --use_ema \
   --train_mode="inpaint" \
   --resume_from_checkpoint="latest" \
   --trainable_modules "."
@@ -64,7 +63,7 @@ accelerate launch --use_deepspeed --deepspeed_config_file config/zero_stage2_con
   --pretrained_model_name_or_path=$MODEL_NAME \
   --train_data_dir=$DATASET_NAME \
   --train_data_meta=$DATASET_META_NAME \
-  --image_sample_size=1280 \
+  --image_sample_size=1024 \
   --video_sample_size=256 \
   --token_sample_size=512 \
   --video_sample_stride=3 \
@@ -92,7 +91,6 @@ accelerate launch --use_deepspeed --deepspeed_config_file config/zero_stage2_con
   --enable_bucket \
   --use_came \
   --use_deepspeed \
-  --use_ema \
   --train_mode="inpaint" \
   --resume_from_checkpoint="latest" \
   --trainable_modules "."

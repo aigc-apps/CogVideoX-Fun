@@ -24,7 +24,7 @@ from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 low_gpu_memory_mode = False
 
 # model path
-model_name          = "models/Diffusion_Transformer/CogVideoX-Fun-2b-InP"
+model_name          = "models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP"
 
 # Choose the sampler in "Euler" "Euler A" "DPM++" "PNDM" and "DDIM"
 sampler_name        = "DDIM_Origin"
@@ -43,7 +43,7 @@ fps                 = 8
 # ome graphics cards, such as v100, 2080ti, do not support torch.bfloat16
 weight_dtype        = torch.bfloat16
 prompt              = "A young woman with beautiful and clear eyes and blonde hair standing and white dress in a forest wearing a crown. She seems to be lost in thought, and the camera focuses on her face. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic."
-negative_prompt     = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. "
+negative_prompt     = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. "
 guidance_scale      = 6.0
 seed                = 43
 num_inference_steps = 50

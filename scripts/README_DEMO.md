@@ -1,0 +1,1 @@
+CogVideoX-Fun-V1.1

@@ -33,7 +33,7 @@ def post_infer(generation_method, length_slider, url='http://127.0.0.1:7860'):
         "lora_model_path": "none", 
         "lora_alpha_slider": 0.55, 
         "prompt_textbox": "A young woman with beautiful and clear eyes and blonde hair standing and white dress in a forest wearing a crown. She seems to be lost in thought, and the camera focuses on her face. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic.", 
-        "negative_prompt_textbox": "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. ", 
+        "negative_prompt_textbox": "The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. ", 
         "sampler_dropdown": "Euler", 
         "sample_step_slider": 50, 
         "width_slider": 672, 

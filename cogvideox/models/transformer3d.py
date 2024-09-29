@@ -453,6 +453,7 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         timestep: Union[int, float, torch.LongTensor],
         timestep_cond: Optional[torch.Tensor] = None,
         inpaint_latents: Optional[torch.Tensor] = None,
+        control_latents: Optional[torch.Tensor] = None,
         image_rotary_emb: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
         return_dict: bool = True,
     ):
@@ -471,6 +472,8 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         # 2. Patch embedding
         if inpaint_latents is not None:
             hidden_states = torch.concat([hidden_states, inpaint_latents], 2)
+        if control_latents is not None:
+            hidden_states = torch.concat([hidden_states, control_latents], 2)
         hidden_states = self.patch_embed(encoder_hidden_states, hidden_states)
 
         # 3. Position embedding
