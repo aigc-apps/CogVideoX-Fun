@@ -393,7 +393,7 @@ class ImageVideoControlDataset(Dataset):
     
     def get_batch(self, idx):
         data_info = self.dataset[idx % len(self.dataset)]
-        video_id, control_video_id, text = data_info['file_path'], data_info['control_file_path'], data_info['text']
+        video_id, text = data_info['file_path'], data_info['text']
 
         if data_info.get('type', 'image')=='video':
             if self.data_root is None:
@@ -444,6 +444,8 @@ class ImageVideoControlDataset(Dataset):
                 if random.random() < self.text_drop_ratio:
                     text = ''
 
+            control_video_id = data_info['control_file_path']
+
             if self.data_root is None:
                 control_video_id = control_video_id
             else:
@@ -488,6 +490,8 @@ class ImageVideoControlDataset(Dataset):
 
             if random.random() < self.text_drop_ratio:
                 text = ''
+
+            control_image_id = data_info['control_file_path']
 
             if self.data_root is None:
                 control_image_id = control_image_id
