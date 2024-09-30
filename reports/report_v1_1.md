@@ -1,36 +1,32 @@
-# CogVideoX FUN v1 Report
-In CogVideoX-FUN, we trained on approximately 1.2 million data points based on CogVideoX, supporting image and video predictions. It accommodates pixel values for video generation across different resolutions of 512x512x49, 768x768x49, and 1024x1024x49, as well as videos with different aspect ratios. Moreover, we support the generation of videos from images and the reconstruction of videos from other videos.
+# CogVideoX FUN v1.1 Report
 
-Compared to CogVideoX, CogVideoX FUN also highlights the following features:
-- Introduction of the InPaint model, enabling the generation of videos from images with specified starting and ending images.
-- Training the model based on token lengths. This allows for the implementation of various sizes and resolutions within the same model.
+In CogVideoX-FUN v1.1, we performed additional filtering on the previous dataset, selecting videos with larger motion amplitudes rather than still images in motion, resulting in approximately 0.48 million videos. The model continues to support both image and video prediction, accommodating pixel values from 512x512x49, 768x768x49, 1024x1024x49, and videos with different aspect ratios. We support both image-to-video generation and video-to-video reconstruction.
 
-## InPaint Model
-We used [CogVideoX](https://github.com/THUDM/CogVideo/) as the foundational structure, referencing [EasyAnimate](https://github.com/aigc-apps/EasyAnimate) for the model training to generate videos from images. 
+Additionally, we have released training and prediction code for adding control signals, along with the initial version of the Control model.
 
-During video generation, the **reference video** is encoded using VAE, with the **black area in the above image representing the part to be reconstructed, and the white area representing the start image**. This is stacked with noise latents and input into the Transformer for video generation. We perform 3D resizing on the **masked area**, directly resizing it to fit the canvas size of the video that needs reconstruction. 
+Compared to version 1.0, CogVideoX-FUN V1.1 highlights the following features:
+- In the 5b model, Noise has been added to the reference images, increasing the motion amplitude of the videos.
+- Released training and prediction code for adding control signals, along with the initial version of the Control model.
 
-Then, we concatenate the latent, the encoded reference video, and the masked area, inputting them into DiT for noise prediction to obtain the final video. 
-The pipeline structure of CogVideoX FUN is as follows:
-<img src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/pipeline.jpg" alt="ui" style="zoom:50%;" />
+## Adding Noise to Reference Images
 
-## Token Length-Based Model Training
-We collected approximately 1.2 million high-quality data for the training of CogVideoX-Fun. During the training, we resized the videos based on different token lengths. The entire training process is divided into three phases, with each phase corresponding to 13312 (for 512x512x49 videos), 29952 (for 768x768x49 videos), and 53248 (for 1024x1024x49 videos).
+Building on the original CogVideoX-FUN V1.0, we drew upon [CogVideoX](https://github.com/THUDM/CogVideo/) and [SVD](https://github.com/Stability-AI/generative-models) to add Noise upwards to the non-zero reference images to disrupt the original images, aiming for greater motion amplitude.
 
-Taking CogVideoX-Fun-2B as an example:
-- In the 13312 phase, the batch size is 128 with 7k training steps.
-- In the 29952 phase, the batch size is 256 with 6.5k training steps.
-- In the 53248 phase, the batch size is 128 with 5k training steps.
+In our 5b model, Noise has been added, while the 2b model only performed fine-tuning with new data. This is because, after attempting to add Noise in the 2b model, the generated videos exhibited excessive motion amplitude, leading to deformation and damaging the output. The 5b model, due to its stronger generative capabilities, maintains relatively stable outputs during motion.
 
-During training, we combined high and low resolutions, enabling the model to support video generation from any resolution between 512 and 1280. For example, with a token length of 13312:
-- At a resolution of 512x512, the number of video frames is 49.
-- At a resolution of 768x768, the number of video frames is 21.
-- At a resolution of 1024x1024, the number of video frames is 9.
+Furthermore, the prompt words significantly influence the generation results, so please describe the actions in detail to increase dynamism. If unsure how to write positive prompts, you can use phrases like "smooth motion" or "in the wind" to enhance dynamism. Additionally, it is advisable to avoid using dynamic terms like "motion" in negative prompts.
 
-These resolutions and corresponding lengths were mixed for training, allowing the model to generate videos at different resolutions.
+## Adding Control Signals to CogVideoX-FUN
 
-## Resize 3D Embedding
-In adapting CogVideoX-2B to the CogVideoX-Fun framework, it was found that the source code obtains 3D embeddings in a truncated manner. This approach only accommodates a single resolution; when the resolution changes, the embedding should also change.
-<img src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1/PE_Interpolation.jpg" alt="ui" style="zoom:50%;" />
+On the basis of the original CogVideoX-FUN V1.0, we replaced the original mask signal with Pose control signals. The control signals are encoded using VAE and used as Guidance, along with latent data entering the patch processing flow.
 
-Referencing Pixart-Sigma, the above image is from the Pixart-Sigma paper. We used Positional Embeddings Interpolation (PE Interpolation) to resize 3D embeddings. PE Interpolation is more conducive to convergence than directly generating cosine and sine embeddings for different resolutions.
+We filtered the 0.48 million dataset, selecting around 20,000 videos and images containing portraits for pose extraction, which served as condition control signals for training. 
+
+During the training process, the videos are scaled according to different Token lengths. The entire training process is divided into two phases, with each phase comprising 13,312 (corresponding to 512x512x49 videos) and 53,248 (corresponding to 1024x1024x49 videos).
+
+Taking CogVideoX-Fun-V1.1-5b-Pose as an example:
+- In the 13312 phase, the batch size is 128, with 2.4k training steps.
+- In the 53248 phase, the batch size is 128, with 1.2k training steps.
+
+The working principle diagram is shown below:
+<img src="https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1.1/pipeline_control.jpg" alt="ui" style="zoom:50%;" />

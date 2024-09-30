@@ -24,6 +24,17 @@ The metadata_control.json is a little different from normal json in CogVideoX-Fu
 ]
 ```
 
+Some parameters in the sh file can be confusing, and they are explained in this document:
+
+- `enable_bucket` is used to enable bucket training. When enabled, the model does not crop the images and videos at the center, but instead, it trains the entire images and videos after grouping them into buckets based on resolution.
+- `random_frame_crop` is used for random cropping on video frames to simulate videos with different frame counts.
+- `random_hw_adapt` is used to enable automatic height and width scaling for images and videos. When random_hw_adapt is enabled, the training images will have their height and width set to image_sample_size as the maximum and video_sample_size as the minimum. For training videos, the height and width will be set to video_sample_size as the maximum and min(video_sample_size, 512) as the minimum.
+- `training_with_video_token_length` specifies training the model according to token length. The token length for a video with dimensions 512x512 and 49 frames is 13,312.
+  - At 512x512 resolution, the number of video frames is 49;
+  - At 768x768 resolution, the number of video frames is 21;
+  - At 1024x1024 resolution, the number of video frames is 9;
+  - These resolutions combined with their corresponding lengths allow the model to generate videos of different sizes.
+
 CogVideoX-Fun without deepspeed:
 ```sh
 export MODEL_NAME="models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-Pose"
