@@ -226,7 +226,7 @@ class CogVideoX_Fun_Controller:
             print("Update lora model")
             self.update_lora_model(lora_model_dropdown)
 
-        if control_video is not None and self.model_type == "Inapint":
+        if control_video is not None and self.model_type == "Inpaint":
             if is_api:
                 return "", f"If specifying the control video, please set the model_type == \"Control\". "
             else:
@@ -636,11 +636,15 @@ def ui(low_gpu_memory_mode, weight_dtype):
                         denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
                     with gr.Column(visible = False) as control_video_col:
-                        with gr.Row():
-                            control_video = gr.Video(
-                                label="The control video (用于提供控制信号的video)",  show_label=True, 
-                                elem_id="v2v_control", sources="upload", 
-                            )
+                        gr.Markdown(
+                            """
+                            Demo pose control video can be downloaded here [URL](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1.1/pose.mp4).
+                            """
+                        )
+                        control_video = gr.Video(
+                            label="The control video (用于提供控制信号的video)",  show_label=True, 
+                            elem_id="v2v_control", sources="upload", 
+                        )
 
                     cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=6.0, minimum=0,   maximum=20)
                     
@@ -851,8 +855,8 @@ class CogVideoX_Fun_Controller_Modelscope:
         if self.lora_model_path != lora_model_dropdown:
             print("Update lora model")
             self.update_lora_model(lora_model_dropdown)
-
-        if control_video is not None and self.model_type == "Inapint":
+        
+        if control_video is not None and self.model_type == "Inpaint":
             if is_api:
                 return "", f"If specifying the control video, please set the model_type == \"Control\". "
             else:
@@ -1161,11 +1165,15 @@ def ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, w
                         denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
                     with gr.Column(visible = False) as control_video_col:
-                        with gr.Row():
-                            control_video = gr.Video(
-                                label="The control video (用于提供控制信号的video)",  show_label=True, 
-                                elem_id="v2v_control", sources="upload", 
-                            )
+                        gr.Markdown(
+                            """
+                            Demo pose control video can be downloaded here [URL](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1.1/pose.mp4).
+                            """
+                        )
+                        control_video = gr.Video(
+                            label="The control video (用于提供控制信号的video)",  show_label=True, 
+                            elem_id="v2v_control", sources="upload", 
+                        )
 
                     cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=6.0, minimum=0,   maximum=20)
                     
@@ -1188,12 +1196,6 @@ def ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, w
                         value="No task currently",
                         interactive=False
                     )
-
-            model_type.change(
-                fn=controller.update_model_type, 
-                inputs=[model_type], 
-                outputs=[]
-            )
 
             def upload_generation_method(generation_method):
                 if generation_method == "Video Generation":

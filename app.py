@@ -22,6 +22,7 @@ if __name__ == "__main__":
     model_name = "models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP"
     # "Inpaint" or "Control"
     model_type = "Inpaint"
+    # Save dir of this model
     savedir_sample = "samples"
 
     if ui_mode == "modelscope":
