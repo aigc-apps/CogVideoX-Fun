@@ -19,11 +19,14 @@ if __name__ == "__main__":
     server_port = 7860
 
     # Params below is used when ui_mode = "modelscope"
-    model_name = "models/Diffusion_Transformer/CogVideoX-Fun-2b-InP"
+    model_name = "models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP"
+    # "Inpaint" or "Control"
+    model_type = "Inpaint"
+    # Save dir of this model
     savedir_sample = "samples"
 
     if ui_mode == "modelscope":
-        demo, controller = ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
+        demo, controller = ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, weight_dtype)
     elif ui_mode == "eas":
         demo, controller = ui_eas(model_name, savedir_sample)
     else:

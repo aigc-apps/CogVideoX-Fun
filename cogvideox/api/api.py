@@ -68,6 +68,20 @@ def save_base64_video(base64_string):
 
     return file_path
 
+def save_base64_image(base64_string):
+    video_data = base64.b64decode(base64_string)
+
+    md5_hash = hashlib.md5(video_data).hexdigest()
+    filename = f"{md5_hash}.jpg"  
+    
+    temp_dir = tempfile.gettempdir()
+    file_path = os.path.join(temp_dir, filename)
+
+    with open(file_path, 'wb') as video_file:
+        video_file.write(video_data)
+
+    return file_path
+
 def infer_forward_api(_: gr.Blocks, app: FastAPI, controller):
     @app.post("/cogvideox_fun/infer_forward")
     def _infer_forward_api(
@@ -77,7 +91,7 @@ def infer_forward_api(_: gr.Blocks, app: FastAPI, controller):
         lora_model_path = datas.get('lora_model_path', 'none')
         lora_alpha_slider = datas.get('lora_alpha_slider', 0.55)
         prompt_textbox = datas.get('prompt_textbox', None)
-        negative_prompt_textbox = datas.get('negative_prompt_textbox', 'The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. ')
+        negative_prompt_textbox = datas.get('negative_prompt_textbox', 'The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. ')
         sampler_dropdown = datas.get('sampler_dropdown', 'Euler')
         sample_step_slider = datas.get('sample_step_slider', 30)
         resize_method = datas.get('resize_method', "Generate by")
@@ -93,6 +107,8 @@ def infer_forward_api(_: gr.Blocks, app: FastAPI, controller):
         start_image = datas.get('start_image', None)
         end_image = datas.get('end_image', None)
         validation_video = datas.get('validation_video', None)
+        validation_video_mask = datas.get('validation_video_mask', None)
+        control_video = datas.get('control_video', None)
         denoise_strength = datas.get('denoise_strength', 0.70)
         seed_textbox = datas.get("seed_textbox", 43)
 
@@ -109,6 +125,12 @@ def infer_forward_api(_: gr.Blocks, app: FastAPI, controller):
         if validation_video is not None:
             validation_video = save_base64_video(validation_video)
 
+        if validation_video_mask is not None:
+            validation_video_mask = save_base64_image(validation_video_mask)
+
+        if control_video is not None:
+            control_video = save_base64_video(control_video)
+        
         try:
             save_sample_path, comment = controller.generate(
                 "",
@@ -131,6 +153,8 @@ def infer_forward_api(_: gr.Blocks, app: FastAPI, controller):
                 start_image,
                 end_image,
                 validation_video,
+                validation_video_mask, 
+                control_video, 
                 denoise_strength,
                 seed_textbox,
                 is_api = True,

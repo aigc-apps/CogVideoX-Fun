@@ -23,6 +23,8 @@ from ..cogvideox.data.bucket_sampler import ASPECT_RATIO_512, get_closest_ratio
 from ..cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from ..cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from ..cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
+from ..cogvideox.pipeline.pipeline_cogvideox_control import \
+    CogVideoX_Fun_Pipeline_Control
 from ..cogvideox.pipeline.pipeline_cogvideox_inpaint import (
     CogVideoX_Fun_Pipeline_Inpaint)
 from ..cogvideox.utils.lora_utils import merge_lora, unmerge_lora
@@ -59,9 +61,19 @@ class LoadCogVideoX_Fun_Model:
                     [ 
                         'CogVideoX-Fun-2b-InP',
                         'CogVideoX-Fun-5b-InP',
+                        'CogVideoX-Fun-V1.1-2b-InP',
+                        'CogVideoX-Fun-V1.1-5b-InP',
+                        'CogVideoX-Fun-V1.1-2b-Pose',
+                        'CogVideoX-Fun-V1.1-5b-Pose',
                     ],
                     {
-                        "default": 'CogVideoX-Fun-2b-InP',
+                        "default": 'CogVideoX-Fun-V1.1-2b-InP',
+                    }
+                ),
+                "model_type": (
+                    ["Inpaint", "Control"],
+                    {
+                        "default": "Inpaint",
                     }
                 ),
                 "low_gpu_memory_mode":(
@@ -85,7 +97,7 @@ class LoadCogVideoX_Fun_Model:
     FUNCTION = "loadmodel"
     CATEGORY = "CogVideoXFUNWrapper"
 
-    def loadmodel(self, low_gpu_memory_mode, model, precision):
+    def loadmodel(self, low_gpu_memory_mode, model, model_type, precision):
         # Init weight_dtype and device
         device          = mm.get_torch_device()
         offload_device  = mm.unet_offload_device()
@@ -131,22 +143,31 @@ class LoadCogVideoX_Fun_Model:
         pbar.update(1) 
 
         # Get pipeline
-        if transformer.config.in_channels != vae.config.latent_channels:
-            pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
-                model_path,
-                vae=vae, 
-                transformer=transformer,
-                scheduler=scheduler,
-                torch_dtype=weight_dtype
-            )
+        if model_type == "Inpaint":
+            if transformer.config.in_channels != vae.config.latent_channels:
+                pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
+                    model_path,
+                    vae=vae, 
+                    transformer=transformer,
+                    scheduler=scheduler,
+                    torch_dtype=weight_dtype
+                )
+            else:
+                pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
+                    model_path,
+                    vae=vae, 
+                    transformer=transformer,
+                    scheduler=scheduler,
+                    torch_dtype=weight_dtype
+                )
         else:
-            pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
-                model_path,
-                vae=vae, 
-                transformer=transformer,
-                scheduler=scheduler,
-                torch_dtype=weight_dtype
-            )
+            pipeline = CogVideoX_Fun_Pipeline_Control.from_pretrained(
+                    model_path,
+                    vae=vae, 
+                    transformer=transformer,
+                    scheduler=scheduler,
+                    torch_dtype=weight_dtype
+                )
         if low_gpu_memory_mode:
             pipeline.enable_sequential_cpu_offload()
         else:
@@ -156,6 +177,7 @@ class LoadCogVideoX_Fun_Model:
             'pipeline': pipeline, 
             'dtype': weight_dtype,
             'model_path': model_path,
+            'model_type': model_type,
             'loras': [],
             'strength_model': [],
         }
@@ -491,8 +513,11 @@ class CogVideoX_Fun_V2VSampler:
                         "default": 'DDIM'
                     }
                 ),
+            },
+            "optional":{
                 "validation_video": ("IMAGE",),
-            }
+                "control_video": ("IMAGE",),
+            },
         }
     
     RETURN_TYPES = ("IMAGE",)
@@ -500,26 +525,34 @@ class CogVideoX_Fun_V2VSampler:
     FUNCTION = "process"
     CATEGORY = "CogVideoXFUNWrapper"
 
-    def process(self, cogvideoxfun_model, prompt, negative_prompt, video_length, base_resolution, seed, steps, cfg, denoise_strength, scheduler, validation_video):
+    def process(self, cogvideoxfun_model, prompt, negative_prompt, video_length, base_resolution, seed, steps, cfg, denoise_strength, scheduler, validation_video=None, control_video=None):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
 
         mm.soft_empty_cache()
         gc.collect()
-
-        # Count most suitable height and width
-        aspect_ratio_sample_size    = {key : [x / 512 * base_resolution for x in ASPECT_RATIO_512[key]] for key in ASPECT_RATIO_512.keys()}
-        if type(validation_video) is str:
-            original_width, original_height = Image.fromarray(cv2.VideoCapture(validation_video).read()[1]).size
-        else:
-            validation_video = np.array(validation_video.cpu().numpy() * 255, np.uint8)
-            original_width, original_height = Image.fromarray(validation_video[0]).size
-        closest_size, closest_ratio = get_closest_ratio(original_height, original_width, ratios=aspect_ratio_sample_size)
-        height, width = [int(x / 16) * 16 for x in closest_size]
         
         # Get Pipeline
         pipeline = cogvideoxfun_model['pipeline']
         model_path = cogvideoxfun_model['model_path']
+        model_type = cogvideoxfun_model['model_type']
+
+        # Count most suitable height and width
+        aspect_ratio_sample_size    = {key : [x / 512 * base_resolution for x in ASPECT_RATIO_512[key]] for key in ASPECT_RATIO_512.keys()}
+        if model_type == "Inpaint":
+            if type(validation_video) is str:
+                original_width, original_height = Image.fromarray(cv2.VideoCapture(validation_video).read()[1]).size
+            else:
+                validation_video = np.array(validation_video.cpu().numpy() * 255, np.uint8)
+                original_width, original_height = Image.fromarray(validation_video[0]).size
+        else:
+            if type(control_video) is str:
+                original_width, original_height = Image.fromarray(cv2.VideoCapture(control_video).read()[1]).size
+            else:
+                control_video = np.array(control_video.cpu().numpy() * 255, np.uint8)
+                original_width, original_height = Image.fromarray(control_video[0]).size
+        closest_size, closest_ratio = get_closest_ratio(original_height, original_width, ratios=aspect_ratio_sample_size)
+        height, width = [int(x / 16) * 16 for x in closest_size]
 
         # Load Sampler
         if scheduler == "DPM++":
@@ -535,29 +568,47 @@ class CogVideoX_Fun_V2VSampler:
         pipeline.scheduler = noise_scheduler
 
         generator= torch.Generator(device).manual_seed(seed)
-
+        
         with torch.no_grad():
             video_length = int((video_length - 1) // pipeline.vae.config.temporal_compression_ratio * pipeline.vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
-            input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, video_length=video_length, sample_size=(height, width))
+            if model_type == "Inpaint":
+                input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, video_length=video_length, sample_size=(height, width), fps=8)
+            else:
+                input_video, input_video_mask, clip_image = get_video_to_video_latent(control_video, video_length=video_length, sample_size=(height, width), fps=8)
 
             for _lora_path, _lora_weight in zip(cogvideoxfun_model.get("loras", []), cogvideoxfun_model.get("strength_model", [])):
                 pipeline = merge_lora(pipeline, _lora_path, _lora_weight)
+            
+            if model_type == "Inpaint":
+                sample = pipeline(
+                    prompt, 
+                    num_frames = video_length,
+                    negative_prompt = negative_prompt,
+                    height      = height,
+                    width       = width,
+                    generator   = generator,
+                    guidance_scale = cfg,
+                    num_inference_steps = steps,
 
-            sample = pipeline(
-                prompt, 
-                num_frames = video_length,
-                negative_prompt = negative_prompt,
-                height      = height,
-                width       = width,
-                generator   = generator,
-                guidance_scale = cfg,
-                num_inference_steps = steps,
+                    video        = input_video,
+                    mask_video   = input_video_mask,
+                    strength = float(denoise_strength),
+                    comfyui_progressbar = True,
+                ).videos
+            else:
+                sample = pipeline(
+                    prompt, 
+                    num_frames = video_length,
+                    negative_prompt = negative_prompt,
+                    height      = height,
+                    width       = width,
+                    generator   = generator,
+                    guidance_scale = cfg,
+                    num_inference_steps = steps,
 
-                video        = input_video,
-                mask_video   = input_video_mask,
-                strength = float(denoise_strength),
-                comfyui_progressbar = True,
-            ).videos
+                    control_video = input_video,
+                    comfyui_progressbar = True,
+                ).videos
             videos = rearrange(sample, "b c t h w -> (b t) h w c")
 
             for _lora_path, _lora_weight in zip(cogvideoxfun_model.get("loras", []), cogvideoxfun_model.get("strength_model", [])):

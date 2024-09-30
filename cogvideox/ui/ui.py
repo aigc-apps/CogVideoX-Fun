@@ -30,6 +30,8 @@ from cogvideox.data.bucket_sampler import ASPECT_RATIO_512, get_closest_ratio
 from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
+from cogvideox.pipeline.pipeline_cogvideox_control import \
+    CogVideoX_Fun_Pipeline_Control
 from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
     CogVideoX_Fun_Pipeline_Inpaint
 from cogvideox.utils.lora_utils import merge_lora, unmerge_lora
@@ -58,7 +60,7 @@ css = """
 }
 """
 
-class CogVideoX_I2VController:
+class CogVideoX_Fun_Controller:
     def __init__(self, low_gpu_memory_mode, weight_dtype):
         # config dirs
         self.basedir                    = os.getcwd()
@@ -68,6 +70,7 @@ class CogVideoX_I2VController:
         self.personalized_model_dir     = os.path.join(self.basedir, "models", "Personalized_Model")
         self.savedir                    = os.path.join(self.basedir, "samples", datetime.now().strftime("Gradio-%Y-%m-%dT%H-%M-%S"))
         self.savedir_sample             = os.path.join(self.savedir, "sample")
+        self.model_type                 = "Inpaint"
         os.makedirs(self.savedir, exist_ok=True)
 
         self.diffusion_transformer_list = []
@@ -102,6 +105,9 @@ class CogVideoX_I2VController:
         personalized_model_list = sorted(glob(os.path.join(self.personalized_model_dir, "*.safetensors")))
         self.personalized_model_list = [os.path.basename(p) for p in personalized_model_list]
 
+    def update_model_type(self, model_type):
+        self.model_type = model_type
+
     def update_diffusion_transformer(self, diffusion_transformer_dropdown):
         print("Update diffusion transformer")
         if diffusion_transformer_dropdown == "none":
@@ -118,16 +124,25 @@ class CogVideoX_I2VController:
         ).to(self.weight_dtype)
         
         # Get pipeline
-        if self.transformer.config.in_channels != self.vae.config.latent_channels:
-            self.pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
-                diffusion_transformer_dropdown,
-                vae=self.vae, 
-                transformer=self.transformer,
-                scheduler=scheduler_dict["Euler"].from_pretrained(diffusion_transformer_dropdown, subfolder="scheduler"),
-                torch_dtype=self.weight_dtype
-            )
+        if self.model_type == "Inpaint":
+            if self.transformer.config.in_channels != self.vae.config.latent_channels:
+                self.pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
+                    diffusion_transformer_dropdown,
+                    vae=self.vae, 
+                    transformer=self.transformer,
+                    scheduler=scheduler_dict["Euler"].from_pretrained(diffusion_transformer_dropdown, subfolder="scheduler"),
+                    torch_dtype=self.weight_dtype
+                )
+            else:
+                self.pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
+                    diffusion_transformer_dropdown,
+                    vae=self.vae, 
+                    transformer=self.transformer,
+                    scheduler=scheduler_dict["Euler"].from_pretrained(diffusion_transformer_dropdown, subfolder="scheduler"),
+                    torch_dtype=self.weight_dtype
+                )
         else:
-            self.pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
+            self.pipeline = CogVideoX_Fun_Pipeline_Control.from_pretrained(
                 diffusion_transformer_dropdown,
                 vae=self.vae, 
                 transformer=self.transformer,
@@ -191,6 +206,8 @@ class CogVideoX_I2VController:
         start_image, 
         end_image, 
         validation_video,
+        validation_video_mask,
+        control_video,
         denoise_strength,
         seed_textbox,
         is_api = False,
@@ -208,20 +225,34 @@ class CogVideoX_I2VController:
         if self.lora_model_path != lora_model_dropdown:
             print("Update lora model")
             self.update_lora_model(lora_model_dropdown)
-        
+
+        if control_video is not None and self.model_type == "Inpaint":
+            if is_api:
+                return "", f"If specifying the control video, please set the model_type == \"Control\". "
+            else:
+                raise gr.Error(f"If specifying the control video, please set the model_type == \"Control\". ")
+
+        if control_video is None and self.model_type == "Control":
+            if is_api:
+                return "", f"If set the model_type == \"Control\", please specifying the control video. "
+            else:
+                raise gr.Error(f"If set the model_type == \"Control\", please specifying the control video. ")
+
         if resize_method == "Resize according to Reference":
-            if start_image is None and validation_video is None:
+            if start_image is None and validation_video is None and control_video is None:
                 if is_api:
                     return "", f"Please upload an image when using \"Resize according to Reference\"."
                 else:
                     raise gr.Error(f"Please upload an image when using \"Resize according to Reference\".")
 
             aspect_ratio_sample_size    = {key : [x / 512 * base_resolution for x in ASPECT_RATIO_512[key]] for key in ASPECT_RATIO_512.keys()}
-            
-            if validation_video is not None:
-                original_width, original_height = Image.fromarray(cv2.VideoCapture(validation_video).read()[1]).size
+            if self.model_type == "Inpaint":
+                if validation_video is not None:
+                    original_width, original_height = Image.fromarray(cv2.VideoCapture(validation_video).read()[1]).size
+                else:
+                    original_width, original_height = start_image[0].size if type(start_image) is list else Image.open(start_image).size
             else:
-                original_width, original_height = start_image[0].size if type(start_image) is list else Image.open(start_image).size
+                original_width, original_height = Image.fromarray(cv2.VideoCapture(control_video).read()[1]).size
             closest_size, closest_ratio = get_closest_ratio(original_height, original_width, ratios=aspect_ratio_sample_size)
             height_slider, width_slider = [int(x / 16) * 16 for x in closest_size]
 
@@ -255,75 +286,91 @@ class CogVideoX_I2VController:
         generator = torch.Generator(device="cuda").manual_seed(int(seed_textbox))
         
         try:
-            if self.transformer.config.in_channels != self.vae.config.latent_channels:
-                if generation_method == "Long Video Generation":
-                    if validation_video is not None:
-                        raise gr.Error(f"Video to Video is not Support Long Video Generation now.")
-                    init_frames = 0
-                    last_frames = init_frames + partial_video_length
-                    while init_frames < length_slider:
-                        if last_frames >= length_slider:
-                            _partial_video_length = length_slider - init_frames
-                            _partial_video_length = int((_partial_video_length - 1) // self.vae.config.temporal_compression_ratio * self.vae.config.temporal_compression_ratio) + 1
+            if self.model_type == "Inpaint":
+                if self.transformer.config.in_channels != self.vae.config.latent_channels:
+                    if generation_method == "Long Video Generation":
+                        if validation_video is not None:
+                            raise gr.Error(f"Video to Video is not Support Long Video Generation now.")
+                        init_frames = 0
+                        last_frames = init_frames + partial_video_length
+                        while init_frames < length_slider:
+                            if last_frames >= length_slider:
+                                _partial_video_length = length_slider - init_frames
+                                _partial_video_length = int((_partial_video_length - 1) // self.vae.config.temporal_compression_ratio * self.vae.config.temporal_compression_ratio) + 1
+                                
+                                if _partial_video_length <= 0:
+                                    break
+                            else:
+                                _partial_video_length = partial_video_length
+
+                            if last_frames >= length_slider:
+                                input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, video_length=_partial_video_length, sample_size=(height_slider, width_slider))
+                            else:
+                                input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, None, video_length=_partial_video_length, sample_size=(height_slider, width_slider))
+
+                            with torch.no_grad():
+                                sample = self.pipeline(
+                                    prompt_textbox, 
+                                    negative_prompt     = negative_prompt_textbox,
+                                    num_inference_steps = sample_step_slider,
+                                    guidance_scale      = cfg_scale_slider,
+                                    width               = width_slider,
+                                    height              = height_slider,
+                                    num_frames          = _partial_video_length,
+                                    generator           = generator,
+
+                                    video        = input_video,
+                                    mask_video   = input_video_mask,
+                                    strength     = 1,
+                                ).videos
                             
-                            if _partial_video_length <= 0:
+                            if init_frames != 0:
+                                mix_ratio = torch.from_numpy(
+                                    np.array([float(_index) / float(overlap_video_length) for _index in range(overlap_video_length)], np.float32)
+                                ).unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+                                
+                                new_sample[:, :, -overlap_video_length:] = new_sample[:, :, -overlap_video_length:] * (1 - mix_ratio) + \
+                                    sample[:, :, :overlap_video_length] * mix_ratio
+                                new_sample = torch.cat([new_sample, sample[:, :, overlap_video_length:]], dim = 2)
+
+                                sample = new_sample
+                            else:
+                                new_sample = sample
+
+                            if last_frames >= length_slider:
                                 break
-                        else:
-                            _partial_video_length = partial_video_length
 
-                        if last_frames >= length_slider:
-                            input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, video_length=_partial_video_length, sample_size=(height_slider, width_slider))
-                        else:
-                            input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, None, video_length=_partial_video_length, sample_size=(height_slider, width_slider))
+                            start_image = [
+                                Image.fromarray(
+                                    (sample[0, :, _index].transpose(0, 1).transpose(1, 2) * 255).numpy().astype(np.uint8)
+                                ) for _index in range(-overlap_video_length, 0)
+                            ]
 
-                        with torch.no_grad():
-                            sample = self.pipeline(
-                                prompt_textbox, 
-                                negative_prompt     = negative_prompt_textbox,
-                                num_inference_steps = sample_step_slider,
-                                guidance_scale      = cfg_scale_slider,
-                                width               = width_slider,
-                                height              = height_slider,
-                                num_frames          = _partial_video_length,
-                                generator           = generator,
-
-                                video        = input_video,
-                                mask_video   = input_video_mask,
-                                strength     = 1,
-                            ).videos
-                        
-                        if init_frames != 0:
-                            mix_ratio = torch.from_numpy(
-                                np.array([float(_index) / float(overlap_video_length) for _index in range(overlap_video_length)], np.float32)
-                            ).unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
-                            
-                            new_sample[:, :, -overlap_video_length:] = new_sample[:, :, -overlap_video_length:] * (1 - mix_ratio) + \
-                                sample[:, :, :overlap_video_length] * mix_ratio
-                            new_sample = torch.cat([new_sample, sample[:, :, overlap_video_length:]], dim = 2)
-
-                            sample = new_sample
-                        else:
-                            new_sample = sample
-
-                        if last_frames >= length_slider:
-                            break
-
-                        start_image = [
-                            Image.fromarray(
-                                (sample[0, :, _index].transpose(0, 1).transpose(1, 2) * 255).numpy().astype(np.uint8)
-                            ) for _index in range(-overlap_video_length, 0)
-                        ]
-
-                        init_frames = init_frames + _partial_video_length - overlap_video_length
-                        last_frames = init_frames + _partial_video_length
-                else:
-                    if validation_video is not None:
-                        input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
-                        strength = denoise_strength
+                            init_frames = init_frames + _partial_video_length - overlap_video_length
+                            last_frames = init_frames + _partial_video_length
                     else:
-                        input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
-                        strength = 1
+                        if validation_video is not None:
+                            input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider), validation_video_mask=validation_video_mask, fps=8)
+                            strength = denoise_strength
+                        else:
+                            input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
+                            strength = 1
 
+                        sample = self.pipeline(
+                            prompt_textbox,
+                            negative_prompt     = negative_prompt_textbox,
+                            num_inference_steps = sample_step_slider,
+                            guidance_scale      = cfg_scale_slider,
+                            width               = width_slider,
+                            height              = height_slider,
+                            num_frames          = length_slider if not is_image else 1,
+                            generator           = generator,
+
+                            video        = input_video,
+                            mask_video   = input_video_mask,
+                            strength     = strength,
+                        ).videos
+                else:
                     sample = self.pipeline(
                         prompt_textbox,
                         negative_prompt     = negative_prompt_textbox,
@@ -332,13 +379,11 @@ class CogVideoX_I2VController:
                         width               = width_slider,
                         height              = height_slider,
                         num_frames          = length_slider if not is_image else 1,
-                        generator           = generator,
-
-                        video        = input_video,
-                        mask_video   = input_video_mask,
-                        strength     = strength,
+                        generator           = generator
                     ).videos
             else:
+                input_video, input_video_mask, clip_image = get_video_to_video_latent(control_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider), fps=8)
+
                 sample = self.pipeline(
                     prompt_textbox,
                     negative_prompt     = negative_prompt_textbox,
@@ -347,7 +392,9 @@ class CogVideoX_I2VController:
                     width               = width_slider,
                     height              = height_slider,
                     num_frames          = length_slider if not is_image else 1,
-                    generator           = generator
+                    generator           = generator,
+
+                    control_video = input_video,
                 ).videos
         except Exception as e:
             gc.collect()
@@ -422,7 +469,7 @@ class CogVideoX_I2VController:
 
 
 def ui(low_gpu_memory_mode, weight_dtype):
-    controller = CogVideoX_I2VController(low_gpu_memory_mode, weight_dtype)
+    controller = CogVideoX_Fun_Controller(low_gpu_memory_mode, weight_dtype)
 
     with gr.Blocks(css=css) as demo:
         gr.Markdown(
@@ -437,7 +484,20 @@ def ui(low_gpu_memory_mode, weight_dtype):
         with gr.Column(variant="panel"):
             gr.Markdown(
                 """
-                ### 1. Model checkpoints (模型路径).
+                ### 1. CogVideoX-Fun Model Type (CogVideoX-Fun模型的种类，正常模型还是控制模型).
+                """
+            )
+            with gr.Row():
+                model_type = gr.Dropdown(
+                    label="The model type of CogVideoX-Fun (CogVideoX-Fun模型的种类，正常模型还是控制模型)",
+                    choices=["Inpaint", "Control"],
+                    value="Inpaint",
+                    interactive=True,
+                )
+
+            gr.Markdown(
+                """
+                ### 2. Model checkpoints (模型路径).
                 """
             )
             with gr.Row():
@@ -488,12 +548,12 @@ def ui(low_gpu_memory_mode, weight_dtype):
         with gr.Column(variant="panel"):
             gr.Markdown(
                 """
-                ### 2. Configs for Generation (生成参数配置).
+                ### 3. Configs for Generation (生成参数配置).
                 """
             )
             
             prompt_textbox = gr.Textbox(label="Prompt (正向提示词)", lines=2, value="A young woman with beautiful and clear eyes and blonde hair standing and white dress in a forest wearing a crown. She seems to be lost in thought, and the camera focuses on her face. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic.")
-            negative_prompt_textbox = gr.Textbox(label="Negative prompt (负向提示词)", lines=2, value="The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. " )
+            negative_prompt_textbox = gr.Textbox(label="Negative prompt (负向提示词)", lines=2, value="The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. " )
                 
             with gr.Row():
                 with gr.Column():
@@ -522,7 +582,7 @@ def ui(low_gpu_memory_mode, weight_dtype):
                             partial_video_length = gr.Slider(label="Partial video generation length (每个部分的视频生成帧数)", value=25, minimum=5,   maximum=49,  step=4, visible=False)
                     
                     source_method = gr.Radio(
-                        ["Text to Video (文本到视频)", "Image to Video (图片到视频)", "Video to Video (视频到视频)"],
+                        ["Text to Video (文本到视频)", "Image to Video (图片到视频)", "Video to Video (视频到视频)", "Video Control (视频控制)"],
                         value="Text to Video (文本到视频)",
                         show_label=False,
                     )
@@ -557,13 +617,36 @@ def ui(low_gpu_memory_mode, weight_dtype):
                             end_image   = gr.Image(label="The image at the ending of the video (图片到视频的结束图片[非必需, Optional])", show_label=False, elem_id="i2v_end", sources="upload", type="filepath")
 
                     with gr.Column(visible = False) as video_to_video_col:
-                        validation_video = gr.Video(
-                            label="The video to convert (视频转视频的参考视频)",  show_label=True, 
-                            elem_id="v2v", sources="upload", 
-                        )
-                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=0.95, step=0.01)
+                        with gr.Row():
+                            validation_video = gr.Video(
+                                label="The video to convert (视频转视频的参考视频)",  show_label=True, 
+                                elem_id="v2v", sources="upload", 
+                            )
+                        with gr.Accordion("The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])", open=False):
+                            gr.Markdown(
+                                """
+                                - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
+                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                """
+                            )
+                            validation_video_mask = gr.Image(
+                                label="The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])",
+                                show_label=False, elem_id="v2v_mask", sources="upload", type="filepath"
+                            )
+                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
-                    cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=7.0, minimum=0,   maximum=20)
+                    with gr.Column(visible = False) as control_video_col:
+                        gr.Markdown(
+                            """
+                            Demo pose control video can be downloaded here [URL](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1.1/pose.mp4).
+                            """
+                        )
+                        control_video = gr.Video(
+                            label="The control video (用于提供控制信号的video)",  show_label=True, 
+                            elem_id="v2v_control", sources="upload", 
+                        )
+
+                    cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=6.0, minimum=0,   maximum=20)
                     
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed (随机种子)", value=43)
@@ -585,6 +668,12 @@ def ui(low_gpu_memory_mode, weight_dtype):
                         interactive=False
                     )
 
+            model_type.change(
+                fn=controller.update_model_type, 
+                inputs=[model_type], 
+                outputs=[]
+            )
+
             def upload_generation_method(generation_method):
                 if generation_method == "Video Generation":
                     return [gr.update(visible=True, maximum=49, value=49), gr.update(visible=False), gr.update(visible=False)]
@@ -598,13 +687,18 @@ def ui(low_gpu_memory_mode, weight_dtype):
 
             def upload_source_method(source_method):
                 if source_method == "Text to Video (文本到视频)":
-                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
                 elif source_method == "Image to Video (图片到视频)":
-                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None)]
+                    return [gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                elif source_method == "Video to Video (视频到视频)":
+                    return [gr.update(visible=False), gr.update(visible=True), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(), gr.update(), gr.update(value=None)]
                 else:
-                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update()]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update()]
             source_method.change(
-                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video]
+                upload_source_method, source_method, [
+                    image_to_video_col, video_to_video_col, control_video_col, start_image, end_image, 
+                    validation_video, validation_video_mask, control_video
+                ]
             )
 
             def upload_resize_method(resize_method):
@@ -639,6 +733,8 @@ def ui(low_gpu_memory_mode, weight_dtype):
                     start_image, 
                     end_image, 
                     validation_video,
+                    validation_video_mask,
+                    control_video,
                     denoise_strength, 
                     seed_textbox,
                 ],
@@ -647,8 +743,8 @@ def ui(low_gpu_memory_mode, weight_dtype):
     return demo, controller
 
 
-class CogVideoX_I2VController_Modelscope:
-    def __init__(self, model_name, savedir_sample, low_gpu_memory_mode, weight_dtype):
+class CogVideoX_Fun_Controller_Modelscope:
+    def __init__(self, model_name, model_type, savedir_sample, low_gpu_memory_mode, weight_dtype):
         # Basic dir
         self.basedir                    = os.getcwd()
         self.personalized_model_dir     = os.path.join(self.basedir, "models", "Personalized_Model")
@@ -658,6 +754,7 @@ class CogVideoX_I2VController_Modelscope:
         os.makedirs(self.savedir_sample, exist_ok=True)
 
         # model path
+        self.model_type = model_type
         self.weight_dtype = weight_dtype
         
         self.vae = AutoencoderKLCogVideoX.from_pretrained(
@@ -672,16 +769,25 @@ class CogVideoX_I2VController_Modelscope:
         ).to(self.weight_dtype)
         
         # Get pipeline
-        if self.transformer.config.in_channels != self.vae.config.latent_channels:
-            self.pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
-                model_name,
-                vae=self.vae, 
-                transformer=self.transformer,
-                scheduler=scheduler_dict["Euler"].from_pretrained(model_name, subfolder="scheduler"),
-                torch_dtype=self.weight_dtype
-            )
+        if model_type == "Inpaint":
+            if self.transformer.config.in_channels != self.vae.config.latent_channels:
+                self.pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
+                    model_name,
+                    vae=self.vae, 
+                    transformer=self.transformer,
+                    scheduler=scheduler_dict["Euler"].from_pretrained(model_name, subfolder="scheduler"),
+                    torch_dtype=self.weight_dtype
+                )
+            else:
+                self.pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
+                    model_name,
+                    vae=self.vae, 
+                    transformer=self.transformer,
+                    scheduler=scheduler_dict["Euler"].from_pretrained(model_name, subfolder="scheduler"),
+                    torch_dtype=self.weight_dtype
+                )
         else:
-            self.pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
+            self.pipeline = CogVideoX_Fun_Pipeline_Control.from_pretrained(
                 model_name,
                 vae=self.vae, 
                 transformer=self.transformer,
@@ -733,6 +839,8 @@ class CogVideoX_I2VController_Modelscope:
         start_image, 
         end_image, 
         validation_video,
+        validation_video_mask,
+        control_video,
         denoise_strength,
         seed_textbox,
         is_api = False,
@@ -747,25 +855,48 @@ class CogVideoX_I2VController_Modelscope:
         if self.lora_model_path != lora_model_dropdown:
             print("Update lora model")
             self.update_lora_model(lora_model_dropdown)
+        
+        if control_video is not None and self.model_type == "Inpaint":
+            if is_api:
+                return "", f"If specifying the control video, please set the model_type == \"Control\". "
+            else:
+                raise gr.Error(f"If specifying the control video, please set the model_type == \"Control\". ")
+
+        if control_video is None and self.model_type == "Control":
+            if is_api:
+                return "", f"If set the model_type == \"Control\", please specifying the control video. "
+            else:
+                raise gr.Error(f"If set the model_type == \"Control\", please specifying the control video. ")
 
         if resize_method == "Resize according to Reference":
-            if start_image is None and validation_video is None:
-                raise gr.Error(f"Please upload an image when using \"Resize according to Reference\".")
+            if start_image is None and validation_video is None and control_video is None:
+                if is_api:
+                    return "", f"Please upload an image when using \"Resize according to Reference\"."
+                else:
+                    raise gr.Error(f"Please upload an image when using \"Resize according to Reference\".")
         
-            aspect_ratio_sample_size = {key : [x / 512 * base_resolution for x in ASPECT_RATIO_512[key]] for key in ASPECT_RATIO_512.keys()}
-            
-            if validation_video is not None:
-                original_width, original_height = Image.fromarray(cv2.VideoCapture(validation_video).read()[1]).size
+            aspect_ratio_sample_size    = {key : [x / 512 * base_resolution for x in ASPECT_RATIO_512[key]] for key in ASPECT_RATIO_512.keys()}
+            if self.model_type == "Inpaint":
+                if validation_video is not None:
+                    original_width, original_height = Image.fromarray(cv2.VideoCapture(validation_video).read()[1]).size
+                else:
+                    original_width, original_height = start_image[0].size if type(start_image) is list else Image.open(start_image).size
             else:
-                original_width, original_height = start_image[0].size if type(start_image) is list else Image.open(start_image).size
+                original_width, original_height = Image.fromarray(cv2.VideoCapture(control_video).read()[1]).size
             closest_size, closest_ratio = get_closest_ratio(original_height, original_width, ratios=aspect_ratio_sample_size)
             height_slider, width_slider = [int(x / 16) * 16 for x in closest_size]
 
         if self.transformer.config.in_channels == self.vae.config.latent_channels and start_image is not None:
-            raise gr.Error(f"Please select an image to video pretrained model while using image to video.")
-        
+            if is_api:
+                return "", f"Please select an image to video pretrained model while using image to video."
+            else:
+                raise gr.Error(f"Please select an image to video pretrained model while using image to video.")
+
         if start_image is None and end_image is not None:
-            raise gr.Error(f"If specifying the ending image of the video, please specify a starting image of the video.")
+            if is_api:
+                return "", f"If specifying the ending image of the video, please specify a starting image of the video."
+            else:
+                raise gr.Error(f"If specifying the ending image of the video, please specify a starting image of the video.")
 
         is_image = True if generation_method == "Image Generation" else False
 
@@ -779,13 +910,42 @@ class CogVideoX_I2VController_Modelscope:
         generator = torch.Generator(device="cuda").manual_seed(int(seed_textbox))
         
         try:
-            if self.transformer.config.in_channels != self.vae.config.latent_channels:
-                if validation_video is not None:
-                    input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
-                    strength = denoise_strength
+            if self.model_type == "Inpaint":
+                if self.transformer.config.in_channels != self.vae.config.latent_channels:
+                    if validation_video is not None:
+                        input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider), validation_video_mask=validation_video_mask, fps=8)
+                        strength = denoise_strength
+                    else:
+                        input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
+                        strength = 1
+
+                    sample = self.pipeline(
+                        prompt_textbox,
+                        negative_prompt     = negative_prompt_textbox,
+                        num_inference_steps = sample_step_slider,
+                        guidance_scale      = cfg_scale_slider,
+                        width               = width_slider,
+                        height              = height_slider,
+                        num_frames          = length_slider if not is_image else 1,
+                        generator           = generator,
+
+                        video        = input_video,
+                        mask_video   = input_video_mask,
+                        strength     = strength,
+                    ).videos
                 else:
-                    input_video, input_video_mask, clip_image = get_image_to_video_latent(start_image, end_image, length_slider if not is_image else 1, sample_size=(height_slider, width_slider))
-                    strength = 1
+                    sample = self.pipeline(
+                        prompt_textbox,
+                        negative_prompt     = negative_prompt_textbox,
+                        num_inference_steps = sample_step_slider,
+                        guidance_scale      = cfg_scale_slider,
+                        width               = width_slider,
+                        height              = height_slider,
+                        num_frames          = length_slider if not is_image else 1,
+                        generator           = generator
+                    ).videos
+            else:
+                input_video, input_video_mask, clip_image = get_video_to_video_latent(control_video, length_slider if not is_image else 1, sample_size=(height_slider, width_slider), fps=8)
 
                 sample = self.pipeline(
                     prompt_textbox,
@@ -797,20 +957,7 @@ class CogVideoX_I2VController_Modelscope:
                     num_frames          = length_slider if not is_image else 1,
                     generator           = generator,
 
-                    video        = input_video,
-                    mask_video   = input_video_mask,
-                    strength     = strength,
-                ).videos
-            else:
-                sample = self.pipeline(
-                    prompt_textbox,
-                    negative_prompt     = negative_prompt_textbox,
-                    num_inference_steps = sample_step_slider,
-                    guidance_scale      = cfg_scale_slider,
-                    width               = width_slider,
-                    height              = height_slider,
-                    num_frames          = length_slider if not is_image else 1,
-                    generator           = generator
+                    control_video = input_video,
                 ).videos
         except Exception as e:
             gc.collect()
@@ -866,8 +1013,8 @@ class CogVideoX_I2VController_Modelscope:
                     return gr.Image.update(visible=False, value=None), gr.Video.update(value=save_sample_path, visible=True), "Success"
 
 
-def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype):
-    controller = CogVideoX_I2VController_Modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
+def ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, weight_dtype):
+    controller = CogVideoX_Fun_Controller_Modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, weight_dtype)
 
     with gr.Blocks(css=css) as demo:
         gr.Markdown(
@@ -882,7 +1029,20 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
         with gr.Column(variant="panel"):
             gr.Markdown(
                 """
-                ### 1. Model checkpoints (模型路径).
+                ### 1. CogVideoX-Fun Model Type (CogVideoX-Fun模型的种类，正常模型还是控制模型).
+                """
+            )
+            with gr.Row():
+                model_type = gr.Dropdown(
+                    label="The model type of CogVideoX-Fun (CogVideoX-Fun模型的种类，正常模型还是控制模型)",
+                    choices=[model_type],
+                    value=model_type,
+                    interactive=False,
+                )
+
+            gr.Markdown(
+                """
+                ### 2. Model checkpoints (模型路径).
                 """
             )
             with gr.Row():
@@ -919,12 +1079,12 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
         with gr.Column(variant="panel"):
             gr.Markdown(
                 """
-                ### 2. Configs for Generation (生成参数配置).
+                ### 3. Configs for Generation (生成参数配置).
                 """
             )
 
             prompt_textbox = gr.Textbox(label="Prompt (正向提示词)", lines=2, value="A young woman with beautiful and clear eyes and blonde hair standing and white dress in a forest wearing a crown. She seems to be lost in thought, and the camera focuses on her face. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic.")
-            negative_prompt_textbox = gr.Textbox(label="Negative prompt (负向提示词)", lines=2, value="The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. " )
+            negative_prompt_textbox = gr.Textbox(label="Negative prompt (负向提示词)", lines=2, value="The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. " )
                 
             with gr.Row():
                 with gr.Column():
@@ -953,7 +1113,7 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
                         partial_video_length = gr.Slider(label="Partial video generation length (每个部分的视频生成帧数)", value=25, minimum=5,   maximum=49,  step=4, visible=False)
                         
                     source_method = gr.Radio(
-                        ["Text to Video (文本到视频)", "Image to Video (图片到视频)", "Video to Video (视频到视频)"],
+                        ["Text to Video (文本到视频)", "Image to Video (图片到视频)", "Video to Video (视频到视频)", "Video Control (视频控制)"],
                         value="Text to Video (文本到视频)",
                         show_label=False,
                     )
@@ -986,13 +1146,36 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
                             end_image   = gr.Image(label="The image at the ending of the video (图片到视频的结束图片[非必需, Optional])", show_label=False, elem_id="i2v_end", sources="upload", type="filepath")
 
                     with gr.Column(visible = False) as video_to_video_col:
-                        validation_video = gr.Video(
-                            label="The video to convert (视频转视频的参考视频)",  show_label=True, 
-                            elem_id="v2v", sources="upload", 
-                        )
-                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=0.95, step=0.01)
+                        with gr.Row():
+                            validation_video = gr.Video(
+                                label="The video to convert (视频转视频的参考视频)",  show_label=True, 
+                                elem_id="v2v", sources="upload", 
+                            ) 
+                        with gr.Accordion("The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])", open=False):
+                            gr.Markdown(
+                                """
+                                - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
+                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                """
+                            )
+                            validation_video_mask = gr.Image(
+                                label="The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])",
+                                show_label=False, elem_id="v2v_mask", sources="upload", type="filepath"
+                            )
+                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
-                    cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=7.0, minimum=0,   maximum=20)
+                    with gr.Column(visible = False) as control_video_col:
+                        gr.Markdown(
+                            """
+                            Demo pose control video can be downloaded here [URL](https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/asset/v1.1/pose.mp4).
+                            """
+                        )
+                        control_video = gr.Video(
+                            label="The control video (用于提供控制信号的video)",  show_label=True, 
+                            elem_id="v2v_control", sources="upload", 
+                        )
+
+                    cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=6.0, minimum=0,   maximum=20)
                     
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed (随机种子)", value=43)
@@ -1025,13 +1208,18 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
 
             def upload_source_method(source_method):
                 if source_method == "Text to Video (文本到视频)":
-                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
                 elif source_method == "Image to Video (图片到视频)":
-                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None)]
+                    return [gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                elif source_method == "Video to Video (视频到视频)":
+                    return [gr.update(visible=False), gr.update(visible=True), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(), gr.update(), gr.update(value=None)]
                 else:
-                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update()]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update()]
             source_method.change(
-                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video]
+                upload_source_method, source_method, [
+                    image_to_video_col, video_to_video_col, control_video_col, start_image, end_image, 
+                    validation_video, validation_video_mask, control_video
+                ]
             )
 
             def upload_resize_method(resize_method):
@@ -1066,6 +1254,8 @@ def ui_modelscope(model_name, savedir_sample, low_gpu_memory_mode, weight_dtype)
                     start_image, 
                     end_image, 
                     validation_video,
+                    validation_video_mask,
+                    control_video,
                     denoise_strength, 
                     seed_textbox,
                 ],
@@ -1080,7 +1270,7 @@ def post_eas(
     prompt_textbox, negative_prompt_textbox, 
     sampler_dropdown, sample_step_slider, resize_method, width_slider, height_slider,
     base_resolution, generation_method, length_slider, cfg_scale_slider, 
-    start_image, end_image, validation_video, denoise_strength, seed_textbox,
+    start_image, end_image, validation_video, validation_video_mask, denoise_strength, seed_textbox,
 ):
     if start_image is not None:
         with open(start_image, 'rb') as file:
@@ -1100,6 +1290,12 @@ def post_eas(
             validation_video_encoded_content = base64.b64encode(file_content)
             validation_video = validation_video_encoded_content.decode('utf-8')
 
+    if validation_video_mask is not None:
+        with open(validation_video_mask, 'rb') as file:
+            file_content = file.read()
+            validation_video_mask_encoded_content = base64.b64encode(file_content)
+            validation_video_mask = validation_video_mask_encoded_content.decode('utf-8')
+
     datas = {
         "base_model_path": base_model_dropdown,
         "lora_model_path": lora_model_dropdown, 
@@ -1118,6 +1314,7 @@ def post_eas(
         "start_image": start_image,
         "end_image": end_image,
         "validation_video": validation_video,
+        "validation_video_mask": validation_video_mask,
         "denoise_strength": denoise_strength,
         "seed_textbox": seed_textbox,
     }
@@ -1131,7 +1328,7 @@ def post_eas(
     return outputs
 
 
-class CogVideoX_I2VController_EAS:
+class CogVideoX_Fun_Controller_EAS:
     def __init__(self, model_name, savedir_sample):
         self.savedir_sample = savedir_sample
         os.makedirs(self.savedir_sample, exist_ok=True)
@@ -1156,6 +1353,7 @@ class CogVideoX_I2VController_EAS:
         start_image, 
         end_image, 
         validation_video, 
+        validation_video_mask, 
         denoise_strength,
         seed_textbox
     ):
@@ -1167,7 +1365,7 @@ class CogVideoX_I2VController_EAS:
             prompt_textbox, negative_prompt_textbox, 
             sampler_dropdown, sample_step_slider, resize_method, width_slider, height_slider,
             base_resolution, generation_method, length_slider, cfg_scale_slider, 
-            start_image, end_image, validation_video, denoise_strength, 
+            start_image, end_image, validation_video, validation_video_mask, denoise_strength, 
             seed_textbox
         )
         try:
@@ -1201,7 +1399,7 @@ class CogVideoX_I2VController_EAS:
 
 
 def ui_eas(model_name, savedir_sample):
-    controller = CogVideoX_I2VController_EAS(model_name, savedir_sample)
+    controller = CogVideoX_Fun_Controller_EAS(model_name, savedir_sample)
 
     with gr.Blocks(css=css) as demo:
         gr.Markdown(
@@ -1216,7 +1414,7 @@ def ui_eas(model_name, savedir_sample):
         with gr.Column(variant="panel"):
             gr.Markdown(
                 """
-                ### 1. Model checkpoints.
+                ### 1. Model checkpoints (模型路径).
                 """
             )
             with gr.Row():
@@ -1258,7 +1456,7 @@ def ui_eas(model_name, savedir_sample):
             )
             
             prompt_textbox = gr.Textbox(label="Prompt", lines=2, value="A young woman with beautiful and clear eyes and blonde hair standing and white dress in a forest wearing a crown. She seems to be lost in thought, and the camera focuses on her face. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic.")
-            negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. " )
+            negative_prompt_textbox = gr.Textbox(label="Negative prompt", lines=2, value="The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. " )
                 
             with gr.Row():
                 with gr.Column():
@@ -1317,13 +1515,25 @@ def ui_eas(model_name, savedir_sample):
                             end_image   = gr.Image(label="The image at the ending of the video (Optional)", show_label=True, elem_id="i2v_end", sources="upload", type="filepath")
                     
                     with gr.Column(visible = False) as video_to_video_col:
-                        validation_video = gr.Video(
-                            label="The video to convert (视频转视频的参考视频)",  show_label=True, 
-                            elem_id="v2v", sources="upload", 
-                        )
-                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=0.95, step=0.01)
+                        with gr.Row():
+                            validation_video = gr.Video(
+                                label="The video to convert (视频转视频的参考视频)",  show_label=True, 
+                                elem_id="v2v", sources="upload", 
+                            )
+                        with gr.Accordion("The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])", open=False):
+                            gr.Markdown(
+                                """
+                                - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
+                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                """
+                            )
+                            validation_video_mask = gr.Image(
+                                label="The mask of the video to inpaint (视频重新绘制的mask[非必需, Optional])",
+                                show_label=False, elem_id="v2v_mask", sources="upload", type="filepath"
+                            )
+                        denoise_strength = gr.Slider(label="Denoise strength (重绘系数)", value=0.70, minimum=0.10, maximum=1.00, step=0.01)
 
-                    cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=7.0, minimum=0,   maximum=20)
+                    cfg_scale_slider  = gr.Slider(label="CFG Scale (引导系数)",        value=6.0, minimum=0,   maximum=20)
                     
                     with gr.Row():
                         seed_textbox = gr.Textbox(label="Seed", value=43)
@@ -1356,13 +1566,13 @@ def ui_eas(model_name, savedir_sample):
 
             def upload_source_method(source_method):
                 if source_method == "Text to Video (文本到视频)":
-                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
+                    return [gr.update(visible=False), gr.update(visible=False), gr.update(value=None), gr.update(value=None), gr.update(value=None), gr.update(value=None)]
                 elif source_method == "Image to Video (图片到视频)":
-                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None)]
+                    return [gr.update(visible=True), gr.update(visible=False), gr.update(), gr.update(), gr.update(value=None), gr.update(value=None)]
                 else:
-                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update()]
+                    return [gr.update(visible=False), gr.update(visible=True), gr.update(value=None), gr.update(value=None), gr.update(), gr.update()]
             source_method.change(
-                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video]
+                upload_source_method, source_method, [image_to_video_col, video_to_video_col, start_image, end_image, validation_video, validation_video_mask]
             )
 
             def upload_resize_method(resize_method):
@@ -1395,6 +1605,7 @@ def ui_eas(model_name, savedir_sample):
                     start_image, 
                     end_image, 
                     validation_video,
+                    validation_video_mask,
                     denoise_strength, 
                     seed_textbox,
                 ],

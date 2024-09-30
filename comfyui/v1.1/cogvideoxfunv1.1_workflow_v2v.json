@@ -1,6 +1,6 @@
 {
-  "last_node_id": 88,
-  "last_link_id": 52,
+  "last_node_id": 90,
+  "last_link_id": 57,
   "nodes": [
     {
       "id": 80,
@@ -102,7 +102,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            49
+            56
           ],
           "shape": 3,
           "slot_index": 0
@@ -155,36 +155,38 @@
       }
     },
     {
-      "id": 73,
-      "type": "CogVideoX_FUN_TextBox",
+      "id": 88,
+      "type": "LoadCogVideoX_Fun_Model",
       "pos": [
-        250,
-        160
+        309,
+        -286
       ],
       "size": {
-        "0": 383.7149963378906,
-        "1": 183.83506774902344
+        "0": 315,
+        "1": 130
       },
       "flags": {},
       "order": 4,
       "mode": 0,
       "outputs": [
         {
-          "name": "prompt",
-          "type": "STRING_PROMPT",
+          "name": "cogvideoxfun_model",
+          "type": "CogVideoXFUNSMODEL",
           "links": [
-            50
+            53
           ],
           "shape": 3,
           "slot_index": 0
         }
       ],
-      "title": "Negtive Prompt（反向提示词）",
       "properties": {
-        "Node name for S&R": "CogVideoX_FUN_TextBox"
+        "Node name for S&R": "LoadCogVideoX_Fun_Model"
       },
       "widgets_values": [
-        "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. "
+        "CogVideoX-Fun-V1.1-2b-InP",
+        "Inpaint",
+        false,
+        "bf16"
       ]
     },
     {
@@ -206,7 +208,7 @@
           "name": "prompt",
           "type": "STRING_PROMPT",
           "links": [
-            51
+            54
           ],
           "shape": 3,
           "slot_index": 0
@@ -221,15 +223,48 @@
       ]
     },
     {
-      "id": 87,
-      "type": "CogVideoX_Fun_V2VSampler",
+      "id": 73,
+      "type": "CogVideoX_FUN_TextBox",
       "pos": [
-        778,
-        93
+        250,
+        160
       ],
       "size": {
-        "0": 336,
-        "1": 286
+        "0": 383.7149963378906,
+        "1": 183.83506774902344
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING_PROMPT",
+          "links": [
+            55
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "title": "Negtive Prompt（反向提示词）",
+      "properties": {
+        "Node name for S&R": "CogVideoX_FUN_TextBox"
+      },
+      "widgets_values": [
+        "The video is not of a high quality, it has a low resolution. Watermark present in each frame. Strange motion trajectory. "
+      ]
+    },
+    {
+      "id": 90,
+      "type": "CogVideoX_Fun_V2VSampler",
+      "pos": [
+        754,
+        14
+      ],
+      "size": {
+        "0": 317.4000244140625,
+        "1": 306
       },
       "flags": {},
       "order": 7,
@@ -238,24 +273,28 @@
         {
           "name": "cogvideoxfun_model",
           "type": "CogVideoXFUNSMODEL",
-          "link": 52
+          "link": 53
         },
         {
           "name": "prompt",
           "type": "STRING_PROMPT",
-          "link": 51,
-          "slot_index": 1
+          "link": 54
         },
         {
           "name": "negative_prompt",
           "type": "STRING_PROMPT",
-          "link": 50
+          "link": 55
         },
         {
           "name": "validation_video",
           "type": "IMAGE",
-          "link": 49,
+          "link": 56,
           "slot_index": 3
+        },
+        {
+          "name": "control_video",
+          "type": "IMAGE",
+          "link": null
         }
       ],
       "outputs": [
@@ -263,10 +302,9 @@
           "name": "images",
           "type": "IMAGE",
           "links": [
-            48
+            57
           ],
-          "shape": 3,
-          "slot_index": 0
+          "shape": 3
         }
       ],
       "properties": {
@@ -274,9 +312,9 @@
       },
       "widgets_values": [
         49,
-        512,
+        768,
         43,
-        "fixed",
+        "randomize",
         50,
         6,
         0.7,
@@ -287,8 +325,8 @@
       "id": 17,
       "type": "VHS_VideoCombine",
       "pos": [
-        1134,
-        93
+        1125,
+        15
       ],
       "size": [
         390.9534912109375,
@@ -301,7 +339,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 48,
+          "link": 57,
           "label": "图像",
           "slot_index": 0
         },
@@ -358,82 +396,48 @@
           }
         }
       }
-    },
-    {
-      "id": 88,
-      "type": "LoadCogVideoX_Fun_Model",
-      "pos": [
-        309,
-        -286
-      ],
-      "size": {
-        "0": 315,
-        "1": 106
-      },
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "cogvideoxfun_model",
-          "type": "CogVideoXFUNSMODEL",
-          "links": [
-            52
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "LoadCogVideoX_Fun_Model"
-      },
-      "widgets_values": [
-        "CogVideoX-Fun-2b-InP",
-        false,
-        "bf16"
-      ]
     }
   ],
   "links": [
     [
-      48,
-      87,
+      53,
+      88,
       0,
-      17,
+      90,
       0,
-      "IMAGE"
+      "CogVideoXFUNSMODEL"
     ],
     [
-      49,
-      85,
-      0,
-      87,
-      3,
-      "IMAGE"
-    ],
-    [
-      50,
-      73,
-      0,
-      87,
-      2,
-      "STRING_PROMPT"
-    ],
-    [
-      51,
+      54,
       75,
       0,
-      87,
+      90,
       1,
       "STRING_PROMPT"
     ],
     [
-      52,
-      88,
+      55,
+      73,
       0,
-      87,
+      90,
+      2,
+      "STRING_PROMPT"
+    ],
+    [
+      56,
+      85,
       0,
-      "CogVideoXFUNSMODEL"
+      90,
+      3,
+      "IMAGE"
+    ],
+    [
+      57,
+      90,
+      0,
+      17,
+      0,
+      "IMAGE"
     ]
   ],
   "groups": [
@@ -476,8 +480,8 @@
     "ds": {
       "scale": 0.683013455365071,
       "offset": [
-        322.5575500900931,
-        444.05399028364593
+        314.4077746994681,
+        444.69453403364594
       ]
     },
     "workspace_info": {

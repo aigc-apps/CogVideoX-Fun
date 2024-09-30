@@ -1,6 +1,28 @@
-## Lora Training Code
+## Training Code
+
+The default training commands for the different versions are as follows:
 
 We can choose whether to use deep speed in CogVideoX-Fun, which can save a lot of video memory. 
+
+The metadata_control.json is a little different from normal json in CogVideoX-Fun, you need to add a control_file_path, and [DWPose](https://github.com/IDEA-Research/DWPose) is suggested as tool to generate control file.
+
+```json
+[
+    {
+      "file_path": "train/00000001.mp4",
+      "control_file_path": "control/00000001.mp4",
+      "text": "A group of young men in suits and sunglasses are walking down a city street.",
+      "type": "video"
+    },
+    {
+      "file_path": "train/00000002.jpg",
+      "control_file_path": "control/00000002.jpg",
+      "text": "A group of young men in suits and sunglasses are walking down a city street.",
+      "type": "image"
+    },
+    .....
+]
+```
 
 Some parameters in the sh file can be confusing, and they are explained in this document:
 
@@ -12,20 +34,18 @@ Some parameters in the sh file can be confusing, and they are explained in this 
   - At 768x768 resolution, the number of video frames is 21;
   - At 1024x1024 resolution, the number of video frames is 9;
   - These resolutions combined with their corresponding lengths allow the model to generate videos of different sizes.
-- `train_mode` is used to specify the training mode, which can be either normal or inpaint. Since CogVideoX-Fun uses the Inpaint model to achieve text-to-video generation, the default is set to inpaint mode. If you only wish to achieve text-to-video generation, you can remove this line, and it will default to the text-to-video mode.
 
 CogVideoX-Fun without deepspeed:
-
 ```sh
-export MODEL_NAME="models/Diffusion_Transformer/CogVideoX-Fun-2b-InP"
+export MODEL_NAME="models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-Pose"
 export DATASET_NAME="datasets/internal_datasets/"
-export DATASET_META_NAME="datasets/internal_datasets/metadata.json"
+export DATASET_META_NAME="datasets/internal_datasets/metadata_control.json"
 export NCCL_IB_DISABLE=1
 export NCCL_P2P_DISABLE=1
 NCCL_DEBUG=INFO
 
 # When train model with multi machines, use "--config_file accelerate.yaml" instead of "--mixed_precision='bf16'".
-accelerate launch --mixed_precision="bf16" scripts/train_lora.py \
+accelerate launch --mixed_precision="bf16" scripts/train_control.py \
   --pretrained_model_name_or_path=$MODEL_NAME \
   --train_data_dir=$DATASET_NAME \
   --train_data_meta=$DATASET_META_NAME \
@@ -34,14 +54,16 @@ accelerate launch --mixed_precision="bf16" scripts/train_lora.py \
   --token_sample_size=512 \
   --video_sample_stride=3 \
   --video_sample_n_frames=49 \
-  --train_batch_size=1 \
+  --train_batch_size=4 \
   --video_repeat=1 \
   --gradient_accumulation_steps=1 \
   --dataloader_num_workers=8 \
   --num_train_epochs=100 \
   --checkpointing_steps=50 \
-  --learning_rate=1e-04 \
-  --seed=42 \
+  --learning_rate=2e-05 \
+  --lr_scheduler="constant_with_warmup" \
+  --lr_warmup_steps=50 \
+  --seed=43 \
   --output_dir="output_dir" \
   --gradient_checkpointing \
   --mixed_precision="bf16" \
@@ -53,20 +75,21 @@ accelerate launch --mixed_precision="bf16" scripts/train_lora.py \
   --training_with_video_token_length \
   --random_frame_crop \
   --enable_bucket \
-  --low_vram \
-  --train_mode="inpaint" 
+  --use_came \
+  --resume_from_checkpoint="latest" \
+  --trainable_modules "."
 ```
 
+CogVideoX-Fun with deepspeed:
 ```sh
-export MODEL_NAME="models/Diffusion_Transformer/CogVideoX-Fun-2b-InP"
+export MODEL_NAME="models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-Pose"
 export DATASET_NAME="datasets/internal_datasets/"
-export DATASET_META_NAME="datasets/internal_datasets/metadata.json"
+export DATASET_META_NAME="datasets/internal_datasets/metadata_control.json"
 export NCCL_IB_DISABLE=1
 export NCCL_P2P_DISABLE=1
 NCCL_DEBUG=INFO
 
-# When train model with multi machines, use "--config_file accelerate.yaml" instead of "--mixed_precision='bf16'".
-accelerate launch --use_deepspeed --deepspeed_config_file config/zero_stage2_config.json --deepspeed_multinode_launcher standard scripts/train_lora.py \
+accelerate launch --use_deepspeed --deepspeed_config_file config/zero_stage2_config.json --deepspeed_multinode_launcher standard scripts/train.py \
   --pretrained_model_name_or_path=$MODEL_NAME \
   --train_data_dir=$DATASET_NAME \
   --train_data_meta=$DATASET_META_NAME \
@@ -75,14 +98,16 @@ accelerate launch --use_deepspeed --deepspeed_config_file config/zero_stage2_con
   --token_sample_size=512 \
   --video_sample_stride=3 \
   --video_sample_n_frames=49 \
-  --train_batch_size=1 \
+  --train_batch_size=4 \
   --video_repeat=1 \
   --gradient_accumulation_steps=1 \
   --dataloader_num_workers=8 \
   --num_train_epochs=100 \
   --checkpointing_steps=50 \
-  --learning_rate=1e-04 \
-  --seed=42 \
+  --learning_rate=2e-05 \
+  --lr_scheduler="constant_with_warmup" \
+  --lr_warmup_steps=50 \
+  --seed=43 \
   --output_dir="output_dir" \
   --gradient_checkpointing \
   --mixed_precision="bf16" \
@@ -94,7 +119,8 @@ accelerate launch --use_deepspeed --deepspeed_config_file config/zero_stage2_con
   --training_with_video_token_length \
   --random_frame_crop \
   --enable_bucket \
+  --use_came \
   --use_deepspeed \
-  --low_vram \
-  --train_mode="inpaint" 
+  --resume_from_checkpoint="latest" \
+  --trainable_modules "."
 ```

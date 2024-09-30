@@ -1,6 +1,6 @@
 {
-  "last_node_id": 88,
-  "last_link_id": 52,
+  "last_node_id": 90,
+  "last_link_id": 59,
   "nodes": [
     {
       "id": 80,
@@ -72,89 +72,6 @@
       "bgcolor": "#653"
     },
     {
-      "id": 85,
-      "type": "VHS_LoadVideo",
-      "pos": [
-        336,
-        470
-      ],
-      "size": [
-        235.1999969482422,
-        398.971426827567
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "meta_batch",
-          "type": "VHS_BatchManager",
-          "link": null
-        },
-        {
-          "name": "vae",
-          "type": "VAE",
-          "link": null
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            49
-          ],
-          "shape": 3,
-          "slot_index": 0
-        },
-        {
-          "name": "frame_count",
-          "type": "INT",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "audio",
-          "type": "AUDIO",
-          "links": null,
-          "shape": 3
-        },
-        {
-          "name": "video_info",
-          "type": "VHS_VIDEOINFO",
-          "links": null,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "VHS_LoadVideo"
-      },
-      "widgets_values": {
-        "video": "00000125.mp4",
-        "force_rate": 0,
-        "force_size": "Disabled",
-        "custom_width": 512,
-        "custom_height": 512,
-        "frame_load_cap": 0,
-        "skip_first_frames": 0,
-        "select_every_nth": 1,
-        "choose video to upload": "image",
-        "videopreview": {
-          "hidden": false,
-          "paused": false,
-          "params": {
-            "frame_load_cap": 0,
-            "skip_first_frames": 0,
-            "force_rate": 0,
-            "filename": "00000125.mp4",
-            "type": "input",
-            "format": "video/mp4",
-            "select_every_nth": 1
-          }
-        }
-      }
-    },
-    {
       "id": 73,
       "type": "CogVideoX_FUN_TextBox",
       "pos": [
@@ -166,14 +83,14 @@
         "1": 183.83506774902344
       },
       "flags": {},
-      "order": 4,
+      "order": 3,
       "mode": 0,
       "outputs": [
         {
           "name": "prompt",
           "type": "STRING_PROMPT",
           "links": [
-            50
+            55
           ],
           "shape": 3,
           "slot_index": 0
@@ -188,111 +105,15 @@
       ]
     },
     {
-      "id": 75,
-      "type": "CogVideoX_FUN_TextBox",
-      "pos": [
-        250,
-        -50
-      ],
-      "size": {
-        "0": 383.54010009765625,
-        "1": 156.71620178222656
-      },
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "outputs": [
-        {
-          "name": "prompt",
-          "type": "STRING_PROMPT",
-          "links": [
-            51
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "title": "Positive Prompt（正向提示词）",
-      "properties": {
-        "Node name for S&R": "CogVideoX_FUN_TextBox"
-      },
-      "widgets_values": [
-        "A cute cat is playing the guitar."
-      ]
-    },
-    {
-      "id": 87,
-      "type": "CogVideoX_Fun_V2VSampler",
-      "pos": [
-        778,
-        93
-      ],
-      "size": {
-        "0": 336,
-        "1": 286
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "cogvideoxfun_model",
-          "type": "CogVideoXFUNSMODEL",
-          "link": 52
-        },
-        {
-          "name": "prompt",
-          "type": "STRING_PROMPT",
-          "link": 51,
-          "slot_index": 1
-        },
-        {
-          "name": "negative_prompt",
-          "type": "STRING_PROMPT",
-          "link": 50
-        },
-        {
-          "name": "validation_video",
-          "type": "IMAGE",
-          "link": 49,
-          "slot_index": 3
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            48
-          ],
-          "shape": 3,
-          "slot_index": 0
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CogVideoX_Fun_V2VSampler"
-      },
-      "widgets_values": [
-        49,
-        512,
-        43,
-        "fixed",
-        50,
-        6,
-        0.7,
-        "DDIM"
-      ]
-    },
-    {
       "id": 17,
       "type": "VHS_VideoCombine",
       "pos": [
-        1134,
-        93
+        1125,
+        15
       ],
       "size": [
         390.9534912109375,
-        535.9734235491071
+        973.1686096191406
       ],
       "flags": {},
       "order": 8,
@@ -301,7 +122,7 @@
         {
           "name": "images",
           "type": "IMAGE",
-          "link": 48,
+          "link": 57,
           "label": "图像",
           "slot_index": 0
         },
@@ -339,7 +160,7 @@
       "widgets_values": {
         "frame_rate": 8,
         "loop_count": 0,
-        "filename_prefix": "EasyAnimate",
+        "filename_prefix": "CogVideoX-Fun",
         "format": "video/h264-mp4",
         "pix_fmt": "yuv420p",
         "crf": 22,
@@ -350,7 +171,7 @@
           "hidden": false,
           "paused": false,
           "params": {
-            "filename": "EasyAnimate_00045.mp4",
+            "filename": "CogVideoX-Fun_00007.mp4",
             "subfolder": "",
             "type": "output",
             "format": "video/h264-mp4",
@@ -368,17 +189,17 @@
       ],
       "size": {
         "0": 315,
-        "1": 106
+        "1": 130
       },
       "flags": {},
-      "order": 6,
+      "order": 4,
       "mode": 0,
       "outputs": [
         {
           "name": "cogvideoxfun_model",
           "type": "CogVideoXFUNSMODEL",
           "links": [
-            52
+            53
           ],
           "shape": 3,
           "slot_index": 0
@@ -388,52 +209,235 @@
         "Node name for S&R": "LoadCogVideoX_Fun_Model"
       },
       "widgets_values": [
-        "CogVideoX-Fun-2b-InP",
+        "CogVideoX-Fun-V1.1-2b-Pose",
+        "Control",
         false,
         "bf16"
+      ]
+    },
+    {
+      "id": 85,
+      "type": "VHS_LoadVideo",
+      "pos": [
+        336,
+        470
+      ],
+      "size": [
+        235.1999969482422,
+        658.5777723524305
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "meta_batch",
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            59
+          ],
+          "shape": 3,
+          "slot_index": 0
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null,
+          "shape": 3
+        },
+        {
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "links": null,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VHS_LoadVideo"
+      },
+      "widgets_values": {
+        "video": "pose.mp4",
+        "force_rate": 8,
+        "force_size": "Disabled",
+        "custom_width": 512,
+        "custom_height": 512,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "choose video to upload": "image",
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "frame_load_cap": 0,
+            "skip_first_frames": 0,
+            "force_rate": 8,
+            "filename": "pose.mp4",
+            "type": "input",
+            "format": "video/mp4",
+            "select_every_nth": 1
+          }
+        }
+      }
+    },
+    {
+      "id": 75,
+      "type": "CogVideoX_FUN_TextBox",
+      "pos": [
+        250,
+        -50
+      ],
+      "size": {
+        "0": 383.54010009765625,
+        "1": 156.71620178222656
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING_PROMPT",
+          "links": [
+            54
+          ],
+          "shape": 3,
+          "slot_index": 0
+        }
+      ],
+      "title": "Positive Prompt（正向提示词）",
+      "properties": {
+        "Node name for S&R": "CogVideoX_FUN_TextBox"
+      },
+      "widgets_values": [
+        "A person wearing a knee-length white sleeveless dress and white high-heeled sandals performs a dance in a well-lit room with wooden flooring. The room's background features a closed door, a shelf displaying clear glass bottles of alcoholic beverages, and a partially visible dark-colored sofa. "
+      ]
+    },
+    {
+      "id": 90,
+      "type": "CogVideoX_Fun_V2VSampler",
+      "pos": [
+        754,
+        14
+      ],
+      "size": {
+        "0": 336,
+        "1": 306
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "cogvideoxfun_model",
+          "type": "CogVideoXFUNSMODEL",
+          "link": 53
+        },
+        {
+          "name": "prompt",
+          "type": "STRING_PROMPT",
+          "link": 54
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING_PROMPT",
+          "link": 55
+        },
+        {
+          "name": "validation_video",
+          "type": "IMAGE",
+          "link": null,
+          "slot_index": 3
+        },
+        {
+          "name": "control_video",
+          "type": "IMAGE",
+          "link": 59
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            57
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CogVideoX_Fun_V2VSampler"
+      },
+      "widgets_values": [
+        49,
+        512,
+        43,
+        "fixed",
+        50,
+        6,
+        1,
+        "DDIM"
       ]
     }
   ],
   "links": [
     [
-      48,
-      87,
+      53,
+      88,
+      0,
+      90,
+      0,
+      "CogVideoXFUNSMODEL"
+    ],
+    [
+      54,
+      75,
+      0,
+      90,
+      1,
+      "STRING_PROMPT"
+    ],
+    [
+      55,
+      73,
+      0,
+      90,
+      2,
+      "STRING_PROMPT"
+    ],
+    [
+      57,
+      90,
       0,
       17,
       0,
       "IMAGE"
     ],
     [
-      49,
+      59,
       85,
       0,
-      87,
-      3,
+      90,
+      4,
       "IMAGE"
-    ],
-    [
-      50,
-      73,
-      0,
-      87,
-      2,
-      "STRING_PROMPT"
-    ],
-    [
-      51,
-      75,
-      0,
-      87,
-      1,
-      "STRING_PROMPT"
-    ],
-    [
-      52,
-      88,
-      0,
-      87,
-      0,
-      "CogVideoXFUNSMODEL"
     ]
   ],
   "groups": [
@@ -464,8 +468,8 @@
       "bounding": [
         218,
         385,
-        456,
-        498
+        457,
+        776
       ],
       "color": "#a1309b",
       "font_size": 24
@@ -474,10 +478,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.683013455365071,
+      "scale": 0.6830134553650712,
       "offset": [
-        322.5575500900931,
-        444.05399028364593
+        250.2298948633902,
+        399.72391778748613
       ]
     },
     "workspace_info": {

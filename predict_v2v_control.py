@@ -16,8 +16,8 @@ from transformers import (CLIPImageProcessor, CLIPVisionModelWithProjection,
 from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
-    CogVideoX_Fun_Pipeline_Inpaint
+from cogvideox.pipeline.pipeline_cogvideox_control import \
+    CogVideoX_Fun_Pipeline_Control
 from cogvideox.utils.lora_utils import merge_lora, unmerge_lora
 from cogvideox.utils.utils import get_video_to_video_latent, save_videos_grid
 
@@ -25,7 +25,7 @@ from cogvideox.utils.utils import get_video_to_video_latent, save_videos_grid
 low_gpu_memory_mode = False
 
 # model path
-model_name          = "models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP"
+model_name          = "models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-Pose"
 
 # Choose the sampler in "Euler" "Euler A" "DPM++" "PNDM" and "DDIM"
 sampler_name        = "DDIM_Origin"
@@ -35,29 +35,23 @@ transformer_path    = None
 vae_path            = None
 lora_path           = None
 # Other params
-sample_size         = [384, 672]
+sample_size         = [672, 384]
 video_length        = 49
 fps                 = 8
 
 # Use torch.float16 if GPU does not support torch.bfloat16
 # ome graphics cards, such as v100, 2080ti, do not support torch.bfloat16
 weight_dtype            = torch.bfloat16
-# If you are preparing to redraw the reference video, set validation_video and validation_video_mask. 
-# If you do not use validation_video_mask, the entire video will be redrawn; 
-# if you use validation_video_mask, only a portion of the video will be redrawn.
-# Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70
-validation_video        = "asset/1.mp4"
-validation_video_mask   = None 
-denoise_strength        = 0.70
+control_video           = "asset/pose.mp4"
 
 # prompts
-prompt                  = "A cute cat is playing the guitar. "
+prompt                  = "A person wearing a knee-length white sleeveless dress and white high-heeled sandals performs a dance in a well-lit room with wooden flooring. The room's background features a closed door, a shelf displaying clear glass bottles of alcoholic beverages, and a partially visible dark-colored sofa. "
 negative_prompt         = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. "
 guidance_scale          = 6.0
 seed                    = 43
 num_inference_steps     = 50
 lora_weight             = 0.55
-save_path               = "samples/cogvideox-fun-videos_v2v"
+save_path               = "samples/cogvideox-fun-videos_control"
 
 transformer = CogVideoXTransformer3DModel.from_pretrained_2d(
     model_name, 
@@ -111,24 +105,14 @@ scheduler = Choosen_Scheduler.from_pretrained(
     subfolder="scheduler"
 )
 
-if transformer.config.in_channels != vae.config.latent_channels:
-    pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
-        model_name,
-        vae=vae,
-        text_encoder=text_encoder,
-        transformer=transformer,
-        scheduler=scheduler,
-        torch_dtype=weight_dtype
-    )
-else:
-    pipeline = CogVideoX_Fun_Pipeline.from_pretrained(
-        model_name,
-        vae=vae,
-        text_encoder=text_encoder,
-        transformer=transformer,
-        scheduler=scheduler,
-        torch_dtype=weight_dtype
-    )
+pipeline = CogVideoX_Fun_Pipeline_Control.from_pretrained(
+    model_name,
+    vae=vae,
+    text_encoder=text_encoder,
+    transformer=transformer,
+    scheduler=scheduler,
+    torch_dtype=weight_dtype
+)
 
 if low_gpu_memory_mode:
     pipeline.enable_sequential_cpu_offload()
@@ -141,7 +125,7 @@ if lora_path is not None:
     pipeline = merge_lora(pipeline, lora_path, lora_weight, "cuda")
 
 video_length = int((video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
-input_video, input_video_mask, clip_image = get_video_to_video_latent(validation_video, video_length=video_length, sample_size=sample_size, validation_video_mask=validation_video_mask, fps=fps)
+input_video, input_video_mask, clip_image = get_video_to_video_latent(control_video, video_length=video_length, sample_size=sample_size, fps=fps)
 
 with torch.no_grad():
     sample = pipeline(
@@ -154,9 +138,7 @@ with torch.no_grad():
         guidance_scale = guidance_scale,
         num_inference_steps = num_inference_steps,
 
-        video       = input_video,
-        mask_video  = input_video_mask,
-        strength    = denoise_strength,
+        control_video = input_video,
     ).videos
 
 if lora_path is not None:

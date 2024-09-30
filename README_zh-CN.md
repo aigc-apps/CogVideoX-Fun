@@ -23,6 +23,7 @@ CogVideoX-Fun是一个基于CogVideoX结构修改后的的pipeline，是一个�
 我们会逐渐支持从不同平台快速启动，请参阅 [快速启动](#快速启动)。
 
 新特性：
+- 重新训练i2v模型，添加Noise，使得视频的运动幅度更大。上传控制模型训练代码与Control模型。[ 2024.09.29 ]
 - 创建代码！现在支持 Windows 和 Linux。支持2b与5b最大256x256x49到1024x1024x49的任意分辨率的视频生成。[ 2024.09.18 ]
 
 功能概览：
@@ -66,10 +67,10 @@ cd CogVideoX-Fun
 mkdir models/Diffusion_Transformer
 mkdir models/Personalized_Model
 
-wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-2b-InP.tar.gz
+wget https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/cogvideox_fun/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP.tar.gz -O models/Diffusion_Transformer/CogVideoX-Fun-V1.1-2b-InP.tar.gz
 
 cd models/Diffusion_Transformer/
-tar -xvf CogVideoX-Fun-2b-InP.tar.gz
+tar -xvf CogVideoX-Fun-V1.1-2b-InP.tar.gz
 cd ../../
 ```
 
@@ -101,8 +102,8 @@ Linux 的详细信息：
 ```
 📦 models/
 ├── 📂 Diffusion_Transformer/
-│   ├── 📂 CogVideoX-Fun-2b-InP/
-│   └── 📂 CogVideoX-Fun-5b-InP/
+│   ├── 📂 CogVideoX-Fun-V1.1-2b-InP/
+│   └── 📂 CogVideoX-Fun-V1.1-5b-InP/
 ├── 📂 Personalized_Model/
 │   └── your trained trainformer model / your trained lora model (for UI load)
 ```
@@ -110,42 +111,43 @@ Linux 的详细信息：
 # 视频作品
 所展示的结果都是图生视频获得。
 
-### CogVideoX-Fun-5B
+### CogVideoX-Fun-V1.1-5B
 
 Resolution-1024
 
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://github.com/user-attachments/assets/ec749326-b529-453f-a4b4-f587875dff64" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/34e7ec8f-293e-4655-bb14-5e1ee476f788" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/84df4178-f493-4aa8-a888-d2020338da82" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/7809c64f-eb8c-48a9-8bdc-ca9261fd5434" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://github.com/user-attachments/assets/c66c139d-94d3-4930-985b-60e3e0600d8f" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/8e76aaa4-c602-44ac-bcb4-8b24b72c386c" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/647c0e0c-28d6-473e-b4eb-a30197dddefc" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/19dba894-7c35-4f25-b15c-384167ab3b03" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
+
 
 Resolution-768
 
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://github.com/user-attachments/assets/647d45b0-4253-4438-baf3-f692789bde78" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/0bc339b9-455b-44fd-8917-80272d702737" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/e5a5a948-5c34-445d-9446-324a666a6a33" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/70a043b9-6721-4bd9-be47-78b7ec5c27e9" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://github.com/user-attachments/assets/0e605797-4a86-4e0c-8589-40ed686d97a4" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/d5dd6c09-14f3-40f8-8b6d-91e26519b8ac" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/5356bf79-0a3b-4caf-ac31-2d796e20e429" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/9327e8bc-4f17-46b0-b50d-38c250a9483a" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
@@ -155,41 +157,92 @@ Resolution-512
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://github.com/user-attachments/assets/5a9f3457-fe82-4082-8494-d8f4f8db75e9" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/ef407030-8062-454d-aba3-131c21e6b58c" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/ca6874b8-41d1-4f02-bee3-4fc886f309ad" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/7610f49e-38b6-4214-aa48-723ae4d1b07e" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://github.com/user-attachments/assets/9216b348-2c80-4eab-9c1c-dd3a54b7ea1e" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/1fff0567-1e15-415c-941e-53ee8ae2c841" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/e99ec495-655f-44d8-afa7-3ad0a14f9975" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/bcec48da-b91b-43a0-9d50-cf026e00fa4f" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
 
-### CogVideoX-Fun-2B
+### CogVideoX-Fun-V1.1-5B-Pose
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          Resolution-512
+      </td>
+      <td>
+          Resolution-768
+      </td>
+       <td>
+          Resolution-1024
+      </td>
+  <tr>
+      <td>
+          <video src="https://github.com/user-attachments/assets/a746df51-9eb7-4446-bee5-2ee30285c143" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://github.com/user-attachments/assets/db295245-e6aa-43be-8c81-32cb411f1473" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://github.com/user-attachments/assets/ec9875b2-fde0-48e1-ab7e-490cee51ef40" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
+
+### CogVideoX-Fun-V1.1-2B
 
 Resolution-768
 
 <table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
   <tr>
       <td>
-          <video src="https://github.com/user-attachments/assets/d329b4d4-f08f-4e77-887e-049cfc93a908" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/03235dea-980e-4fc5-9c41-e40a5bc1b6d0" width="100%" controls autoplay loop></video>
       </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/dd7fa2d5-9871-436c-ae5a-44f1494c9c9f" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/f7302648-5017-47db-bdeb-4d893e620b37" width="100%" controls autoplay loop></video>
       </td>
        <td>
-          <video src="https://github.com/user-attachments/assets/c24a2fa2-2fe3-4277-aa9f-e812a2cf0a4e" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/cbadf411-28fa-4b87-813d-da63ff481904" width="100%" controls autoplay loop></video>
      </td>
       <td>
-          <video src="https://github.com/user-attachments/assets/573edac3-8bd0-4e95-82df-bcfdcba9a73f" width="100%" controls autoplay loop></video>
+          <video src="https://github.com/user-attachments/assets/87cc9d0b-b6fe-4d2d-b447-174513d169ab" width="100%" controls autoplay loop></video>
      </td>
   </tr>
 </table>
 
+### CogVideoX-Fun-V1.1-2B-Pose
+
+<table border="0" style="width: 100%; text-align: left; margin-top: 20px;">
+  <tr>
+      <td>
+          Resolution-512
+      </td>
+      <td>
+          Resolution-768
+      </td>
+       <td>
+          Resolution-1024
+      </td>
+  <tr>
+      <td>
+          <video src="https://github.com/user-attachments/assets/487bcd7b-1b7f-4bb4-95b5-96a6b6548b3e" width="100%" controls autoplay loop></video>
+      </td>
+      <td>
+          <video src="https://github.com/user-attachments/assets/2710fd18-8489-46e4-8086-c237309ae7f6" width="100%" controls autoplay loop></video>
+      </td>
+       <td>
+          <video src="https://github.com/user-attachments/assets/b79513db-7747-4512-b86c-94f9ca447fe2" width="100%" controls autoplay loop></video>
+     </td>
+  </tr>
+</table>
 
 # 如何使用
 
@@ -289,6 +342,18 @@ sh scripts/train.sh
 关于一些参数的设置细节，可以查看[Readme Train](scripts/README_TRAIN.md)与[Readme Lora](scripts/README_TRAIN_LORA.md)
 
 # 模型地址
+
+V1.1:
+
+| 名称 | 存储空间 | Hugging Face | Model Scope | 描述 |
+|--|--|--|--|--|
+| CogVideoX-Fun-V1.1-2b-InP.tar.gz | 解压前 9.7 GB / 解压后 13.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-InP) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-InP) | 官方的图生视频权重。添加了Noise，运动幅度相比于V1.0更大。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+| CogVideoX-Fun-V1.1-5b-InP.tar.gz | 解压前 16.0GB / 解压后 20.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-InP) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-InP) | 官方的图生视频权重。添加了Noise，运动幅度相比于V1.0更大。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+| CogVideoX-Fun-V1.1-2b-Pose.tar.gz | 解压前 9.7 GB / 解压后 13.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-Pose) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-Pose) | 官方的姿态控制生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+| CogVideoX-Fun-V1.1-5b-Pose.tar.gz | 解压前 16.0GB / 解压后 20.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-Pose) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-Pose) | 官方的姿态控制生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
+
+V1.0:
+
 | 名称 | 存储空间 | Hugging Face | Model Scope | 描述 |
 |--|--|--|--|--|
 | CogVideoX-Fun-2b-InP.tar.gz | 解压前 9.7 GB / 解压后 13.0 GB | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-2b-InP) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-2b-InP) | 官方的图生视频权重。支持多分辨率（512，768，1024，1280）的视频预测，以49帧、每秒8帧进行训练 |
