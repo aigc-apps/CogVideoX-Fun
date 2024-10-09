@@ -35,7 +35,7 @@ from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.state import AcceleratorState
 from accelerate.utils import ProjectConfiguration, set_seed
-from diffusers import AutoencoderKL, DDPMScheduler
+from diffusers import AutoencoderKL, DDIMScheduler, DDPMScheduler
 from diffusers.models.embeddings import get_3d_rotary_pos_embed
 from diffusers.optimization import get_scheduler
 from diffusers.training_utils import EMAModel
@@ -163,6 +163,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
             args.pretrained_model_name_or_path, subfolder="transformer"
         ).to(weight_dtype)
         transformer3d_val.load_state_dict(accelerator.unwrap_model(transformer3d).state_dict())
+        scheduler = DDIMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
 
         if args.train_mode != "normal":
             pipeline = CogVideoX_Fun_Pipeline_Inpaint.from_pretrained(
@@ -171,6 +172,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
                 text_encoder=accelerator.unwrap_model(text_encoder),
                 tokenizer=tokenizer,
                 transformer=transformer3d_val,
+                scheduler=scheduler,
                 torch_dtype=weight_dtype
             )
         else:
@@ -180,6 +182,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
                 text_encoder=accelerator.unwrap_model(text_encoder),
                 tokenizer=tokenizer,
                 transformer=transformer3d_val,
+                scheduler=scheduler,
                 torch_dtype=weight_dtype
             )
         pipeline = pipeline.to(accelerator.device)
