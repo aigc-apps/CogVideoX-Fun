@@ -202,7 +202,7 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, network, args, a
             with torch.no_grad():
                 if args.train_mode != "normal":
                     with torch.autocast("cuda", dtype=weight_dtype):
-                        video_length = int((video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
+                        video_length = int((args.video_sample_n_frames - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if args.video_sample_n_frames != 1 else 1
                         input_video, input_video_mask, _ = get_image_to_video_latent(None, None, video_length=video_length, sample_size=[args.video_sample_size, args.video_sample_size])
                         sample = pipeline(
                             args.validation_prompts[i],
