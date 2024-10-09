@@ -194,16 +194,16 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
             with torch.no_grad():
                 if args.train_mode != "normal":
                     with torch.autocast("cuda", dtype=weight_dtype):
-                        video_length = int(args.video_sample_n_frames // vae.mini_batch_encoder * vae.mini_batch_encoder) if args.video_sample_n_frames != 1 else 1
-                        input_video, input_video_mask, clip_image = get_image_to_video_latent(None, None, video_length=video_length, sample_size=[args.video_sample_size, args.video_sample_size])
+                        video_length = int((video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
+                        input_video, input_video_mask, _ = get_image_to_video_latent(None, None, video_length=video_length, sample_size=[args.video_sample_size, args.video_sample_size])
                         sample = pipeline(
-                            args.validation_prompts[i], 
-                            video_length = args.video_sample_n_frames,
+                            args.validation_prompts[i],
+                            num_frames = video_length,
                             negative_prompt = "bad detailed",
                             height      = args.video_sample_size,
                             width       = args.video_sample_size,
                             guidance_scale = 6.0,
-                            generator   = generator, 
+                            generator   = generator,
 
                             video        = input_video,
                             mask_video   = input_video_mask,
@@ -212,10 +212,10 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
                         save_videos_grid(sample, os.path.join(args.output_dir, f"sample/sample-{global_step}-{i}.gif"))
 
                         video_length = 1
-                        input_video, input_video_mask, clip_image = get_image_to_video_latent(None, None, video_length=video_length, sample_size=[args.video_sample_size, args.video_sample_size])
+                        input_video, input_video_mask, _ = get_image_to_video_latent(None, None, video_length=video_length, sample_size=[args.video_sample_size, args.video_sample_size])
                         sample = pipeline(
-                            args.validation_prompts[i], 
-                            video_length = 1,
+                            args.validation_prompts[i],
+                            num_frames = video_length,
                             negative_prompt = "bad detailed",
                             height      = args.video_sample_size,
                             width       = args.video_sample_size,
@@ -230,8 +230,8 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
                 else:
                     with torch.autocast("cuda", dtype=weight_dtype):
                         sample = pipeline(
-                            args.validation_prompts[i], 
-                            video_length = args.video_sample_n_frames,
+                            args.validation_prompts[i],
+                            num_frames = args.video_sample_n_frames,
                             negative_prompt = "bad detailed",
                             height      = args.video_sample_size,
                             width       = args.video_sample_size,
@@ -241,8 +241,8 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, args, accelerato
                         save_videos_grid(sample, os.path.join(args.output_dir, f"sample/sample-{global_step}-{i}.gif"))
 
                         sample = pipeline(
-                            args.validation_prompts[i], 
-                            video_length = 1,
+                            args.validation_prompts[i],
+                            num_frames = 1,
                             negative_prompt = "bad detailed",
                             height      = args.video_sample_size,
                             width       = args.video_sample_size,
