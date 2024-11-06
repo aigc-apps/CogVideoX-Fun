@@ -179,7 +179,7 @@ class CogVideoX_Fun_Pipeline_Control(DiffusionPipeline):
     """
 
     _optional_components = []
-    model_cpu_offload_seq = "text_encoder->vae->transformer->vae"
+    model_cpu_offload_seq = "text_encoder->transformer->vae"
 
     _callback_tensor_inputs = [
         "latents",

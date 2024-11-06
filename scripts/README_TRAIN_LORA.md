@@ -12,7 +12,7 @@ Some parameters in the sh file can be confusing, and they are explained in this 
   - At 768x768 resolution, the number of video frames is 21;
   - At 1024x1024 resolution, the number of video frames is 9;
   - These resolutions combined with their corresponding lengths allow the model to generate videos of different sizes.
-- `train_mode` is used to specify the training mode, which can be either normal or inpaint. Since CogVideoX-Fun uses the Inpaint model to achieve text-to-video generation, the default is set to inpaint mode. If you only wish to achieve text-to-video generation, you can remove this line, and it will default to the text-to-video mode.
+- `train_mode` is used to specify the training mode, which can be either normal or inpaint. Since CogVideoX-Fun uses the Inpaint model to achieve image-to-video generation, the default is set to inpaint mode. If you only wish to achieve text-to-video generation, you can remove this line, and it will default to the text-to-video mode.
 
 CogVideoX-Fun without deepspeed:
 
