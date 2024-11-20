@@ -394,7 +394,7 @@ class CogVideoXDownBlock3D(nn.Module):
         zq: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         for resnet in self.resnets:
-            if self.training and self.gradient_checkpointing:
+            if torch.is_grad_enabled() and self.gradient_checkpointing:
 
                 def create_custom_forward(module):
                     def create_forward(*inputs):
@@ -482,7 +482,7 @@ class CogVideoXMidBlock3D(nn.Module):
         zq: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         for resnet in self.resnets:
-            if self.training and self.gradient_checkpointing:
+            if torch.is_grad_enabled() and self.gradient_checkpointing:
 
                 def create_custom_forward(module):
                     def create_forward(*inputs):
@@ -587,7 +587,7 @@ class CogVideoXUpBlock3D(nn.Module):
     ) -> torch.Tensor:
         r"""Forward method of the `CogVideoXUpBlock3D` class."""
         for resnet in self.resnets:
-            if self.training and self.gradient_checkpointing:
+            if torch.is_grad_enabled() and self.gradient_checkpointing:
 
                 def create_custom_forward(module):
                     def create_forward(*inputs):
@@ -709,7 +709,7 @@ class CogVideoXEncoder3D(nn.Module):
         r"""The forward method of the `CogVideoXEncoder3D` class."""
         hidden_states = self.conv_in(sample)
 
-        if self.training and self.gradient_checkpointing:
+        if torch.is_grad_enabled() and self.gradient_checkpointing:
 
             def create_custom_forward(module):
                 def custom_forward(*inputs):
@@ -850,7 +850,7 @@ class CogVideoXDecoder3D(nn.Module):
         r"""The forward method of the `CogVideoXDecoder3D` class."""
         hidden_states = self.conv_in(sample)
 
-        if self.training and self.gradient_checkpointing:
+        if torch.is_grad_enabled() and self.gradient_checkpointing:
 
             def create_custom_forward(module):
                 def custom_forward(*inputs):
