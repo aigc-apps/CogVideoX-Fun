@@ -234,7 +234,8 @@ Bt default, we set the rank to 128. You can lower this value to reduce training 
 We randomly selected 701 prompts from [MovieGenBench](https://github.com/facebookresearch/MovieGenBench/blob/main/benchmark/MovieGenVideoBench.txt).
 + `train_sample_height` and `train_sample_width`: The resolution of the sampled training videos. We found 
 training at a 256x256 resolution can generalize to any other resolution. Reducing the resolution can save GPU memory 
-during training, but it is recommended that the resolution should be equal to or greater than the image input resolution of the reward model.
+during training, but it is recommended that the resolution should be equal to or greater than the image input resolution of the reward model. 
+Due to the resize and crop preprocessing operations, we suggest using a 1:1 aspect ratio.
 + `reward_fn` and `reward_fn_kwargs`: The reward model name and its keyword arguments. All supported reward models 
 (Aesthetic Predictor [v2](https://github.com/christophschuhmann/improved-aesthetic-predictor)/[v2.5](https://github.com/discus0434/aesthetic-predictor-v2-5), 
 [HPS](https://github.com/tgxs002/HPSv2) v2/v2.1, [PickScore](https://github.com/yuvalkirstain/PickScore) and [MPS](https://github.com/Kwai-Kolors/MPS)) 
