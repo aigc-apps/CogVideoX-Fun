@@ -1,17 +1,17 @@
 # Enhance CogVideoX-Fun with Reward Backpropagation (Preference Optimization)
-We explore the Reward Backpropagation technique <sup>[1](#ref1) [2](#ref2)</sup> to optimized the generated videos for better alignment with human preferences.
-We provide pre-trained models (i.e. LoRAs) along with the training script. You can use the LoRAs to enhance the corresponding base model as a plug-in or train your own reward LoRA.
+We explore the Reward Backpropagation technique <sup>[1](#ref1) [2](#ref2)</sup> to optimized the generated videos by [CogVideoX-Fun-V1.1](https://github.com/aigc-apps/CogVideoX-Fun) for better alignment with human preferences.
+We provide pre-trained models (i.e. LoRAs) along with the training script. You can use these LoRAs to enhance the corresponding base model as a plug-in or train your own reward LoRA.
 
 - [Enhance CogVideoX-Fun with Reward Backpropagation (Preference Optimization)](#enhance-cogvideox-fun-with-reward-backpropagation-preference-optimization)
   - [Demo](#demo)
     - [CogVideoX-Fun-V1.1-5B](#cogvideox-fun-v11-5b)
     - [CogVideoX-Fun-V1.1-2B](#cogvideox-fun-v11-2b)
-  - [How it works](#how-it-works)
   - [Model Zoo](#model-zoo)
   - [Inference](#inference)
   - [Training](#training)
     - [Setup](#setup)
     - [Important Args](#important-args)
+  - [Limitations](#limitations)
   - [References](#references)
 
 
@@ -157,8 +157,6 @@ We provide pre-trained models (i.e. LoRAs) along with the training script. You c
 > [!NOTE]
 > The above test prompts are from <a href="https://github.com/Vchitect/VBench/tree/master/prompts">VBench</a>. All videos are generated with lora weight 0.7.
 
-## How it works
-
 ## Model Zoo
 | Name | Base Model | Reward Model | Hugging Face | Description |
 |--|--|--|--|--|
@@ -168,7 +166,7 @@ We provide pre-trained models (i.e. LoRAs) along with the training script. You c
 | CogVideoX-Fun-V1.1-2b-InP-MPS.safetensors | CogVideoX-Fun-V1.1-2b | [MPS](https://github.com/Kwai-Kolors/MPS) | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-Reward-LoRAs/resolve/main/CogVideoX-Fun-V1.1-2b-InP-MPS.safetensors) | Official MPS reward LoRA (`rank=128` and `network_alpha=64`) for CogVideoX-Fun-V1.1-2b-InP. It is trained with a batch size of 8 for 16,000 steps.|
 
 ## Inference
-We provide a quick start example below.
+We provide an example inference code to run CogVideoX-Fun-V1.1-5b-InP with its HPS2.1 reward LoRA.
 
 ```python
 import torch
@@ -245,6 +243,13 @@ You can also customize your own reward model (e.g., combining aesthetic predicto
 + `num_decoded_latents` and `num_sampled_frames`: The number of decoded latents (for VAE) and sampled frames (for the reward model). 
 Since CogVideoX-Fun adopts the 3D casual VAE, we found decoding only the first latent to obtain the first frame for computing the reward 
 not only reduces training memory usage but also prevents excessive reward optimization and maintains the dynamics of generated videos.
+
+## Limitations
+1. We observe after training to a certain extent, the reward continues to increase, but the quality of the generated videos does not further improve. 
+   The model trickly learns some shortcuts (by adding artifacts in the background, i.e., adversarial patches) to increase the reward.
+2. Currently, there is still a lack of suitable preference models for video generation. Directly using image preference models cannot 
+   evaluate preferences along the temporal dimension (such as dynamism and consistency). Further more, We find using image preference models leads to a decrease 
+   in the dynamism of generated videos. Although this can be mitigated by computing the reward using only the first frame of the decoded video, the impact still persists.
 
 ## References
 <ol>
