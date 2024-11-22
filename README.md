@@ -23,7 +23,7 @@ CogVideoX-Fun is a modified pipeline based on the CogVideoX structure, designed 
 We will support quick pull-ups from different platforms, refer to [Quick Start](#quick-start).
 
 What's New:
-- Upload a new version of the control model that supports different control conditions such as Canny, Depth, Pose, MLSD, etc. [2024.11.16]
+- Use reinforcement learning with reward backpropagation to train Lora and optimize the video, aligning it better with human preferences, detailes in [here](scripts/README_TRAIN_REWARD.md). A new version of the control model supports various conditions (e.g., Canny, Depth, Pose, MLSD, etc.). [2024.11.21]
 - CogVideoX-Fun Control is now supported in diffusers. Thanks to [a-r-r-o-w](https://github.com/a-r-r-o-w) who contributed the support in this [PR](https://github.com/huggingface/diffusers/pull/9671). Check out the [docs](https://huggingface.co/docs/diffusers/main/en/api/pipelines/cogvideox) to know more. [ 2024.10.16 ]
 - Retrain the i2v model and add noise to increase the motion amplitude of the video. Upload the control model training code and control model. [ 2024.09.29 ]
 - Create code! Now supporting Windows and Linux. Supports 2b and 5b models. Supports video generation at any resolution from 256x256x49 to 1024x1024x49. [ 2024.09.18 ]
@@ -173,6 +173,47 @@ Resolution-512
           <video src="https://github.com/user-attachments/assets/bcec48da-b91b-43a0-9d50-cf026e00fa4f" width="100%" controls autoplay loop></video>
      </td>
   </tr>
+</table>
+
+### CogVideoX-Fun-V1.1-5B with Reward Backpropagation
+
+<table border="0" style="width: 100%; text-align: center; margin-top: 20px;">
+    <thead>
+        <tr>
+            <th style="text-align: center;" width="10%">Prompt</sup></th>
+            <th style="text-align: center;" width="30%">CogVideoX-Fun-V1.1-5B</th>
+            <th style="text-align: center;" width="30%">CogVideoX-Fun-V1.1-5B <br> HPSv2.1 Reward LoRA</th>
+            <th style="text-align: center;" width="30%">CogVideoX-Fun-V1.1-5B <br> MPS Reward LoRA</th>
+        </tr>
+    </thead>
+    <tr>
+        <td>
+            Pig with wings flying above a diamond mountain
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/6682f507-4ca2-45e9-9d76-86e2d709efb3" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/ec9219a2-96b3-44dd-b918-8176b2beb3b0" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/a75c6a6a-0b69-4448-afc0-fda3c7955ba0" width="100%" controls autoplay loop></video>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            A dog runs through a field while a cat climbs a tree
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/0392d632-2ec3-46b4-8867-0da1db577b6d" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/7d8c729d-6afb-408e-b812-67c40c3aaa96" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/dcd1343c-7435-4558-b602-9c0fa08cbd59" width="100%" controls autoplay loop></video>
+        </td>
+    </tr>
 </table>
 
 ### CogVideoX-Fun-V1.1-5B-Control

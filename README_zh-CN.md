@@ -23,7 +23,7 @@ CogVideoX-Fun是一个基于CogVideoX结构修改后的的pipeline，是一个�
 我们会逐渐支持从不同平台快速启动，请参阅 [快速启动](#快速启动)。
 
 新特性：
-- 上传新版本的控制模型，支持不同的控制条件，如Canny、Depth、Pose、MLSD等。[2024.11.16]
+- 通过奖励反向传播技术训练Lora，以优化生成的视频，使其更好地与人类偏好保持一致，[更多信息](scripts/README_TRAIN_REWARD.md)。新版本的控制模型，支持不同的控制条件，如Canny、Depth、Pose、MLSD等。[2024.11.21]
 - CogVideoX-Fun Control现在在diffusers中得到了支持。感谢 [a-r-r-o-w](https://github.com/a-r-r-o-w)在这个 [PR](https://github.com/huggingface/diffusers/pull/9671)中贡献了支持。查看[文档](https://huggingface.co/docs/diffusers/main/en/api/pipelines/cogvideox)以了解更多信息。[2024.10.16]
 - 重新训练i2v模型，添加Noise，使得视频的运动幅度更大。上传控制模型训练代码与Control模型。[ 2024.09.29 ]
 - 创建代码！现在支持 Windows 和 Linux。支持2b与5b最大256x256x49到1024x1024x49的任意分辨率的视频生成。[ 2024.09.18 ]
@@ -171,6 +171,47 @@ Resolution-512
           <video src="https://github.com/user-attachments/assets/bcec48da-b91b-43a0-9d50-cf026e00fa4f" width="100%" controls autoplay loop></video>
      </td>
   </tr>
+</table>
+
+### CogVideoX-Fun-V1.1-5B with Reward Backpropagation
+
+<table border="0" style="width: 100%; text-align: center; margin-top: 20px;">
+    <thead>
+        <tr>
+            <th style="text-align: center;" width="10%">Prompt</sup></th>
+            <th style="text-align: center;" width="30%">CogVideoX-Fun-V1.1-5B</th>
+            <th style="text-align: center;" width="30%">CogVideoX-Fun-V1.1-5B <br> HPSv2.1 Reward LoRA</th>
+            <th style="text-align: center;" width="30%">CogVideoX-Fun-V1.1-5B <br> MPS Reward LoRA</th>
+        </tr>
+    </thead>
+    <tr>
+        <td>
+            Pig with wings flying above a diamond mountain
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/6682f507-4ca2-45e9-9d76-86e2d709efb3" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/ec9219a2-96b3-44dd-b918-8176b2beb3b0" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/a75c6a6a-0b69-4448-afc0-fda3c7955ba0" width="100%" controls autoplay loop></video>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            A dog runs through a field while a cat climbs a tree
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/0392d632-2ec3-46b4-8867-0da1db577b6d" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/7d8c729d-6afb-408e-b812-67c40c3aaa96" width="100%" controls autoplay loop></video>
+        </td>
+        <td>
+            <video src="https://github.com/user-attachments/assets/dcd1343c-7435-4558-b602-9c0fa08cbd59" width="100%" controls autoplay loop></video>
+        </td>
+    </tr>
 </table>
 
 ### CogVideoX-Fun-V1.1-5B-Control
