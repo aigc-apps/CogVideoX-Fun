@@ -45,7 +45,7 @@ weight_dtype            = torch.bfloat16
 control_video           = "asset/pose.mp4"
 
 # prompts
-prompt                  = "A person wearing a knee-length white sleeveless dress and white high-heeled sandals performs a dance in a well-lit room with wooden flooring. The room's background features a closed door, a shelf displaying clear glass bottles of alcoholic beverages, and a partially visible dark-colored sofa. "
+prompt                  = "A young woman with beautiful clear eyes and blonde hair, wearing white clothes and twisting her body, with the camera focused on her face. High quality, masterpiece, best quality, high resolution, ultra-fine, dreamlike. "
 negative_prompt         = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. "
 guidance_scale          = 6.0
 seed                    = 43
