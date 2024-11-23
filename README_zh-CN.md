@@ -4,7 +4,7 @@
 
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-yellow)](https://huggingface.co/spaces/alibaba-pai/CogVideoX-Fun-5b)
 
-[English](./README.md) | 简体中文
+[English](./README.md) | 简体中文 | [日本語](./README_ja-JP.md)
 
 # 目录
 - [目录](#目录)
