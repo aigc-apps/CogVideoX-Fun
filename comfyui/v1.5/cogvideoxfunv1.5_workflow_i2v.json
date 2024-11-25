@@ -3,49 +3,6 @@
   "last_link_id": 46,
   "nodes": [
     {
-      "id": 7,
-      "type": "LoadImage",
-      "pos": {
-        "0": 258.7688293457031,
-        "1": 468.1577453613281
-      },
-      "size": {
-        "0": 378.07147216796875,
-        "1": 314
-      },
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            45
-          ],
-          "slot_index": 0,
-          "shape": 3,
-          "label": "图像"
-        },
-        {
-          "name": "MASK",
-          "type": "MASK",
-          "links": null,
-          "shape": 3,
-          "label": "遮罩"
-        }
-      ],
-      "title": "Start Image（图片到视频的开始图片）",
-      "properties": {
-        "Node name for S&R": "LoadImage"
-      },
-      "widgets_values": [
-        "firework.png",
-        "image"
-      ]
-    },
-    {
       "id": 79,
       "type": "Note",
       "pos": {
@@ -57,7 +14,7 @@
         "1": 58
       },
       "flags": {},
-      "order": 1,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -82,7 +39,7 @@
         "1": 66.98204040527344
       },
       "flags": {},
-      "order": 2,
+      "order": 1,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -107,7 +64,7 @@
         "1": 58
       },
       "flags": {},
-      "order": 3,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [],
@@ -132,7 +89,7 @@
         "1": 156.71620178222656
       },
       "flags": {},
-      "order": 4,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -152,74 +109,6 @@
       },
       "widgets_values": [
         "fireworks display over night city. The video is of high quality, and the view is very clear. High quality, masterpiece, best quality, highres, ultra-detailed, fantastic."
-      ]
-    },
-    {
-      "id": 82,
-      "type": "CogVideoX_Fun_I2VSampler",
-      "pos": {
-        "0": 758,
-        "1": 93
-      },
-      "size": {
-        "0": 336,
-        "1": 282
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "cogvideoxfun_model",
-          "type": "CogVideoXFUNSMODEL",
-          "link": 42
-        },
-        {
-          "name": "prompt",
-          "type": "STRING_PROMPT",
-          "link": 43
-        },
-        {
-          "name": "negative_prompt",
-          "type": "STRING_PROMPT",
-          "link": 44
-        },
-        {
-          "name": "start_img",
-          "type": "IMAGE",
-          "link": 45,
-          "slot_index": 3,
-          "shape": 7
-        },
-        {
-          "name": "end_img",
-          "type": "IMAGE",
-          "link": null,
-          "shape": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            46
-          ],
-          "slot_index": 0,
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CogVideoX_Fun_I2VSampler"
-      },
-      "widgets_values": [
-        49,
-        512,
-        43,
-        "fixed",
-        50,
-        6,
-        "DDIM"
       ]
     },
     {
@@ -314,7 +203,7 @@
         "1": 183.83506774902344
       },
       "flags": {},
-      "order": 5,
+      "order": 4,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -348,7 +237,7 @@
         "1": 130
       },
       "flags": {},
-      "order": 6,
+      "order": 5,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -370,6 +259,117 @@
         "Inpaint",
         false,
         "bf16"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": {
+        "0": 259,
+        "1": 468
+      },
+      "size": {
+        "0": 378.07147216796875,
+        "1": 314
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            45
+          ],
+          "slot_index": 0,
+          "shape": 3,
+          "label": "图像"
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null,
+          "shape": 3,
+          "label": "遮罩"
+        }
+      ],
+      "title": "Start Image（图片到视频的开始图片）",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "firework.png",
+        "image"
+      ]
+    },
+    {
+      "id": 82,
+      "type": "CogVideoX_Fun_I2VSampler",
+      "pos": {
+        "0": 758,
+        "1": 93
+      },
+      "size": {
+        "0": 336,
+        "1": 282
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "cogvideoxfun_model",
+          "type": "CogVideoXFUNSMODEL",
+          "link": 42
+        },
+        {
+          "name": "prompt",
+          "type": "STRING_PROMPT",
+          "link": 43
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING_PROMPT",
+          "link": 44
+        },
+        {
+          "name": "start_img",
+          "type": "IMAGE",
+          "link": 45,
+          "slot_index": 3,
+          "shape": 7
+        },
+        {
+          "name": "end_img",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            46
+          ],
+          "slot_index": 0,
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CogVideoX_Fun_I2VSampler"
+      },
+      "widgets_values": [
+        85,
+        512,
+        43,
+        "fixed",
+        50,
+        6,
+        "DDIM"
       ]
     }
   ],
@@ -417,14 +417,14 @@
   ],
   "groups": [
     {
-      "title": "Prompts",
+      "title": "Upload Your Start Image",
       "bounding": [
         218,
-        -127,
-        450,
-        483
+        382,
+        452,
+        418
       ],
-      "color": "#3f789e",
+      "color": "#a1309b",
       "font_size": 24,
       "flags": {}
     },
@@ -441,14 +441,14 @@
       "flags": {}
     },
     {
-      "title": "Upload Your Start Image",
+      "title": "Prompts",
       "bounding": [
         218,
-        382,
-        452,
-        418
+        -127,
+        450,
+        483
       ],
-      "color": "#a1309b",
+      "color": "#3f789e",
       "font_size": 24,
       "flags": {}
     }
@@ -458,8 +458,8 @@
     "ds": {
       "scale": 0.7513148009015777,
       "offset": [
-        240.56295406612847,
-        427.0351051634046
+        253.7221767223781,
+        421.7578981321543
       ]
     },
     "workspace_info": {

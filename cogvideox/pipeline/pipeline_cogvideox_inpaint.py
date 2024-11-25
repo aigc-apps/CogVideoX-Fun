@@ -949,6 +949,7 @@ class CogVideoX_Fun_Pipeline_Inpaint(DiffusionPipeline):
         if video_length > num_frames:
             logger.warning("The length of condition video is not right, the latent frames should be clipped to make it divisible by patch_size_t. ")
             video_length = num_frames
+            video = video[:, :, :video_length]
             init_video = init_video[:, :, :video_length]
             mask_video = mask_video[:, :, :video_length]
 

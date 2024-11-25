@@ -231,74 +231,6 @@
       ]
     },
     {
-      "id": 90,
-      "type": "CogVideoX_Fun_V2VSampler",
-      "pos": {
-        "0": 754,
-        "1": 14
-      },
-      "size": {
-        "0": 336,
-        "1": 306
-      },
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "cogvideoxfun_model",
-          "type": "CogVideoXFUNSMODEL",
-          "link": 53
-        },
-        {
-          "name": "prompt",
-          "type": "STRING_PROMPT",
-          "link": 54
-        },
-        {
-          "name": "negative_prompt",
-          "type": "STRING_PROMPT",
-          "link": 55
-        },
-        {
-          "name": "validation_video",
-          "type": "IMAGE",
-          "link": 56,
-          "slot_index": 3,
-          "shape": 7
-        },
-        {
-          "name": "control_video",
-          "type": "IMAGE",
-          "link": null,
-          "shape": 7
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            57
-          ],
-          "shape": 3
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "CogVideoX_Fun_V2VSampler"
-      },
-      "widgets_values": [
-        49,
-        768,
-        43,
-        "randomize",
-        50,
-        6,
-        0.7,
-        "DDIM"
-      ]
-    },
-    {
       "id": 17,
       "type": "VHS_VideoCombine",
       "pos": {
@@ -413,6 +345,74 @@
         false,
         "bf16"
       ]
+    },
+    {
+      "id": 90,
+      "type": "CogVideoX_Fun_V2VSampler",
+      "pos": {
+        "0": 754,
+        "1": 14
+      },
+      "size": {
+        "0": 336,
+        "1": 306
+      },
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "cogvideoxfun_model",
+          "type": "CogVideoXFUNSMODEL",
+          "link": 53
+        },
+        {
+          "name": "prompt",
+          "type": "STRING_PROMPT",
+          "link": 54
+        },
+        {
+          "name": "negative_prompt",
+          "type": "STRING_PROMPT",
+          "link": 55
+        },
+        {
+          "name": "validation_video",
+          "type": "IMAGE",
+          "link": 56,
+          "slot_index": 3,
+          "shape": 7
+        },
+        {
+          "name": "control_video",
+          "type": "IMAGE",
+          "link": null,
+          "shape": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            57
+          ],
+          "shape": 3
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CogVideoX_Fun_V2VSampler"
+      },
+      "widgets_values": [
+        45,
+        512,
+        43,
+        "randomize",
+        50,
+        6,
+        0.7,
+        "DDIM"
+      ]
     }
   ],
   "links": [
@@ -459,14 +459,14 @@
   ],
   "groups": [
     {
-      "title": "Prompts",
+      "title": "Upload Your Video",
       "bounding": [
         218,
-        -127,
-        450,
-        483
+        385,
+        456,
+        498
       ],
-      "color": "#3f789e",
+      "color": "#a1309b",
       "font_size": 24,
       "flags": {}
     },
@@ -483,14 +483,14 @@
       "flags": {}
     },
     {
-      "title": "Upload Your Video",
+      "title": "Prompts",
       "bounding": [
         218,
-        385,
-        456,
-        498
+        -127,
+        450,
+        483
       ],
-      "color": "#a1309b",
+      "color": "#3f789e",
       "font_size": 24,
       "flags": {}
     }
@@ -500,8 +500,8 @@
     "ds": {
       "scale": 0.7513148009015777,
       "offset": [
-        240.56295406612847,
-        427.0351051634046
+        258.3078876598779,
+        405.0892028196541
       ]
     },
     "workspace_info": {
