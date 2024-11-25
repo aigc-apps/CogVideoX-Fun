@@ -1517,14 +1517,30 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
         for i in range(0, height, overlap_height):
             row = []
             for j in range(0, width, overlap_width):
-                num_batches = max(num_frames // frame_batch_size, 1)
                 conv_cache = None
-                time = []
+                start_frame = 0
+                end_frame = 1
+                dec = []
 
-                for k in range(num_batches):
-                    remaining_frames = num_frames % frame_batch_size
-                    start_frame = frame_batch_size * k + (0 if k == 0 else remaining_frames)
-                    end_frame = frame_batch_size * (k + 1) + remaining_frames
+                tile = z[
+                    :,
+                    :,
+                    start_frame:end_frame,
+                    i : i + self.tile_latent_min_height,
+                    j : j + self.tile_latent_min_width,
+                ]
+
+                self._set_first_frame()
+                if self.post_quant_conv is not None:
+                    tile = self.post_quant_conv(tile)
+                tile, conv_cache = self.decoder(tile, conv_cache=conv_cache)
+                dec.append(tile)
+                
+                self._set_rest_frame()
+                start_frame = end_frame
+                end_frame += self.num_latent_frames_batch_size
+
+                while start_frame < num_frames:
                     tile = z[
                         :,
                         :,
@@ -1535,9 +1551,11 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
                     if self.post_quant_conv is not None:
                         tile = self.post_quant_conv(tile)
                     tile, conv_cache = self.decoder(tile, conv_cache=conv_cache)
-                    time.append(tile)
+                    dec.append(tile)
+                    start_frame = end_frame
+                    end_frame += self.num_latent_frames_batch_size
 
-                row.append(torch.cat(time, dim=2))
+                row.append(torch.cat(dec, dim=2))
             rows.append(row)
 
         result_rows = []
