@@ -65,6 +65,8 @@ class LoadCogVideoX_Fun_Model:
                         'CogVideoX-Fun-V1.1-5b-InP',
                         'CogVideoX-Fun-V1.1-2b-Pose',
                         'CogVideoX-Fun-V1.1-5b-Pose',
+                        'CogVideoX-Fun-V1.1-5b-Control',
+                        'CogVideoX-Fun-V1.5-5b-InP',
                     ],
                     {
                         "default": 'CogVideoX-Fun-V1.1-2b-InP',
@@ -137,7 +139,8 @@ class LoadCogVideoX_Fun_Model:
         # Get Transformer
         transformer = CogVideoXTransformer3DModel.from_pretrained_2d(
             model_path, 
-            subfolder="transformer", 
+            subfolder="transformer",
+            low_cpu_mem_usage=True, 
         ).to(weight_dtype)
         # Update pbar
         pbar.update(1) 
@@ -244,7 +247,7 @@ class CogVideoX_Fun_I2VSampler:
                     "STRING_PROMPT",
                 ),
                 "video_length": (
-                    "INT", {"default": 49, "min": 5, "max": 49, "step": 4}
+                    "INT", {"default": 49, "min": 5, "max": 85, "step": 4}
                 ),
                 "base_resolution": (
                     [ 
@@ -364,7 +367,7 @@ class CogVideoX_Fun_T2VSampler:
                     "STRING_PROMPT", 
                 ),
                 "video_length": (
-                    "INT", {"default": 49, "min": 5, "max": 49, "step": 4}
+                    "INT", {"default": 49, "min": 5, "max": 85, "step": 4}
                 ),
                 "width": (
                     "INT", {"default": 1008, "min": 64, "max": 2048, "step": 16}
@@ -479,7 +482,7 @@ class CogVideoX_Fun_V2VSampler:
                     "STRING_PROMPT",
                 ),
                 "video_length": (
-                    "INT", {"default": 49, "min": 5, "max": 49, "step": 4}
+                    "INT", {"default": 49, "min": 5, "max": 85, "step": 4}
                 ),
                 "base_resolution": (
                     [ 

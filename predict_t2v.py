@@ -36,6 +36,8 @@ lora_path           = None
 
 # Other params
 sample_size         = [384, 672]
+# V1.0 and V1.1 support up to 49 frames of video generation,
+# while V1.5 supports up to 85 frames.  
 video_length        = 49
 fps                 = 8
 
@@ -53,6 +55,7 @@ save_path           = "samples/cogvideox-fun-videos-t2v"
 transformer = CogVideoXTransformer3DModel.from_pretrained_2d(
     model_name, 
     subfolder="transformer",
+    low_cpu_mem_usage=True,
 ).to(weight_dtype)
 
 if transformer_path is not None:
@@ -132,6 +135,11 @@ if lora_path is not None:
 
 with torch.no_grad():
     video_length = int((video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
+    latent_frames = (video_length - 1) // vae.config.temporal_compression_ratio + 1
+    if video_length != 1 and transformer.config.patch_size_t is not None and latent_frames % transformer.config.patch_size_t != 0:
+        additional_frames = transformer.config.patch_size_t - latent_frames % transformer.config.patch_size_t
+        video_length += additional_frames * vae.config.temporal_compression_ratio
+
     if transformer.config.in_channels != vae.config.latent_channels:
         input_video, input_video_mask, _ = get_image_to_video_latent(None, None, video_length=video_length, sample_size=sample_size)
 

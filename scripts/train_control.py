@@ -1339,7 +1339,6 @@ def main():
                             pixel_values_bs = vae.encode(pixel_values_bs)[0]
                             pixel_values_bs = pixel_values_bs.sample()
                             new_pixel_values.append(pixel_values_bs)
-                            vae._clear_fake_context_parallel_cache()
                         return torch.cat(new_pixel_values, dim = 0)
                     if vae_stream_1 is not None:
                         vae_stream_1.wait_stream(torch.cuda.current_stream())
