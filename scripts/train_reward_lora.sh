@@ -3,7 +3,6 @@ export TRAIN_PROMPT_PATH="MovieGenVideoBench_train.txt"
 # Performing validation simultaneously with training will increase time and GPU memory usage.
 export VALIDATION_PROMPT_PATH="MovieGenVideoBench_val.txt"
 
-# When train model with multi machines, use "--config_file accelerate.yaml" instead of "--mixed_precision='bf16'".
 accelerate launch --num_processes=1 --mixed_precision="bf16" scripts/train_reward_lora.py \
   --pretrained_model_name_or_path=$MODEL_NAME \
   --rank=32 \

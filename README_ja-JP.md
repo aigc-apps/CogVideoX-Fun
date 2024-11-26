@@ -423,22 +423,28 @@ sh scripts/train.sh
 
 # モデルの場所
 
+V1.5:
+
+| 名称 | ストレージスペース | Hugging Face | Model Scope | 説明 |
+|--|--|--|--|--|
+| CogVideoX-Fun-V1.5-5b-InP |  20.0 GB  | [🤗Link](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.5-5b-InP) | [😄Link](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.5-5b-InP) | 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024）でビデオを予測できます。85フレーム、8フレーム/秒でトレーニングされています。 |
+
 V1.1:
 
 | 名称 | ストレージスペース | Hugging Face | Model Scope | 説明 |
 |--|--|--|--|--|
-| CogVideoX-Fun-V1.1-2b-InP.tar.gz | 解凍前:9.7 GB / 解凍後: 13.0 GB | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-InP) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-InP) | 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。参照画像にノイズが追加され、V1.0と比較して動きの幅が広がっています。 |
-| CogVideoX-Fun-V1.1-5b-InP.tar.gz | 解凍前:16.0 GB / 解凍後: 20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-InP) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-InP) | 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。参照画像にノイズが追加され、V1.0と比較して動きの幅が広がっています。 |
-| CogVideoX-Fun-V1.1-2b-Pose.tar.gz | 解凍前:9.7 GB / 解凍後: 13.0 GB | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-Pose) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-Pose) | 公式のポーズコントロールビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。|
-| CogVideoX-Fun-V1.1-5b-Pose.tar.gz | 解凍前:16.0 GB / 解凍後: 20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-Pose) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-Pose) | 公式のポーズコントロールビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。|
-| CogVideoX-Fun-V1.1-5b-Control.tar.gz | 解凍前:16.0 GB / 解凍後: 20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-Control) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-Control) | 公式のコントロールビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。Canny、Depth、Pose、MLSDなどのさまざまなコントロール条件をサポートします。|
+| CogVideoX-Fun-V1.1-2b-InP |  13.0 GB | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-InP) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-InP) | 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。参照画像にノイズが追加され、V1.0と比較して動きの幅が広がっています。 |
+| CogVideoX-Fun-V1.1-5b-InP |  20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-InP) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-InP) | 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。参照画像にノイズが追加され、V1.0と比較して動きの幅が広がっています。 |
+| CogVideoX-Fun-V1.1-2b-Pose |  13.0 GB | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-2b-Pose) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-2b-Pose) | 公式のポーズコントロールビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。|
+| CogVideoX-Fun-V1.1-5b-Pose |  20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-Pose) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-Pose) | 公式のポーズコントロールビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。|
+| CogVideoX-Fun-V1.1-5b-Control |  20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-V1.1-5b-Control) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-V1.1-5b-Control) | 公式のコントロールビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。Canny、Depth、Pose、MLSDなどのさまざまなコントロール条件をサポートします。|
 
 V1.0:
 
 | 名称 | ストレージスペース | Hugging Face | Model Scope | 説明 |
 |--|--|--|--|--|
-| CogVideoX-Fun-2b-InP.tar.gz | 解凍前:9.7 GB / 解凍後: 13.0 GB | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-2b-InP) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-2b-InP) | 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。 |
-| CogVideoX-Fun-5b-InP.tar.gz | 解凍前:16.0 GB / 解凍後: 20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-5b-InP)| [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-5b-InP)| 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。|
+| CogVideoX-Fun-2b-InP |  13.0 GB | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-2b-InP) | [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-2b-InP) | 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。 |
+| CogVideoX-Fun-5b-InP |  20.0 GB  | [🤗リンク](https://huggingface.co/alibaba-pai/CogVideoX-Fun-5b-InP)| [😄リンク](https://modelscope.cn/models/PAI/CogVideoX-Fun-5b-InP)| 公式のグラフ生成ビデオモデルは、複数の解像度（512、768、1024、1280）でビデオを予測できます。49フレーム、8フレーム/秒でトレーニングされています。|
 
 # TODOリスト
 - 日本語をサポート。

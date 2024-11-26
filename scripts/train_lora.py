@@ -37,7 +37,6 @@ from accelerate.logging import get_logger
 from accelerate.state import AcceleratorState
 from accelerate.utils import ProjectConfiguration, set_seed
 from diffusers import DDIMScheduler, DDPMScheduler
-from diffusers.models.embeddings import get_3d_rotary_pos_embed
 from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version, deprecate, is_wandb_available
 from diffusers.utils.torch_utils import is_compiled_module
@@ -556,6 +555,9 @@ def parse_args():
     )
     parser.add_argument(
         "--snr_loss", action="store_true", help="Whether or not to use snr_loss."
+    )
+    parser.add_argument(
+        "--uniform_sampling", action="store_true", help="Whether or not to use uniform_sampling."
     )
     parser.add_argument(
         "--enable_text_encoder_in_dataloader", action="store_true", help="Whether or not to use text encoder in dataloader."
@@ -1320,11 +1322,14 @@ def main():
                             return special_list
                     select_frames = [_tmp for _tmp in list(range(sample_n_frames_bucket_interval + 1, args.video_sample_n_frames + sample_n_frames_bucket_interval, sample_n_frames_bucket_interval))]
                     select_frames_prob = np.array(_create_special_list(len(select_frames)))
-                    
-                    if rng is None:
-                        temp_n_frames = np.random.choice(select_frames, p = select_frames_prob)
+
+                    if len(select_frames) != 0:
+                        if rng is None:
+                            temp_n_frames = np.random.choice(select_frames, p = select_frames_prob)
+                        else:
+                            temp_n_frames = rng.choice(select_frames, p = select_frames_prob)
                     else:
-                        temp_n_frames = rng.choice(select_frames, p = select_frames_prob)
+                        temp_n_frames = 1
 
                     # Magvae needs the number of frames to be 4n + 1.
                     local_latent_length = (temp_n_frames - 1) // sample_n_frames_bucket_interval + 1

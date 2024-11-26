@@ -35,81 +35,6 @@ from diffusers.models.autoencoders.vae import DecoderOutput, DiagonalGaussianDis
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 
-class CogVideoXUpsample3D(nn.Module):
-    r"""
-    A 3D Upsample layer using in CogVideoX by Tsinghua University & ZhipuAI # Todo: Wait for paper relase.
-
-    Args:
-        in_channels (`int`):
-            Number of channels in the input image.
-        out_channels (`int`):
-            Number of channels produced by the convolution.
-        kernel_size (`int`, defaults to `3`):
-            Size of the convolving kernel.
-        stride (`int`, defaults to `1`):
-            Stride of the convolution.
-        padding (`int`, defaults to `1`):
-            Padding added to all four sides of the input.
-        compress_time (`bool`, defaults to `False`):
-            Whether or not to compress the time dimension.
-    """
-
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        kernel_size: int = 3,
-        stride: int = 1,
-        padding: int = 1,
-        compress_time: bool = False,
-    ) -> None:
-        super().__init__()
-
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.compress_time = compress_time
-        
-        self.auto_split_process = True
-        self.first_frame_flag = False
-
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        if self.compress_time:
-            if self.auto_split_process:
-                if inputs.shape[2] > 1 and inputs.shape[2] % 2 == 1:
-                    # split first frame
-                    x_first, x_rest = inputs[:, :, 0], inputs[:, :, 1:]
-
-                    x_first = F.interpolate(x_first, scale_factor=2.0)
-                    x_rest = F.interpolate(x_rest, scale_factor=2.0)
-                    x_first = x_first[:, :, None, :, :]
-                    inputs = torch.cat([x_first, x_rest], dim=2)
-                elif inputs.shape[2] > 1:
-                    inputs = F.interpolate(inputs, scale_factor=2.0)
-                else:
-                    inputs = inputs.squeeze(2)
-                    inputs = F.interpolate(inputs, scale_factor=2.0)
-                    inputs = inputs[:, :, None, :, :]
-            else:
-                if self.first_frame_flag:
-                    inputs = inputs.squeeze(2)
-                    inputs = F.interpolate(inputs, scale_factor=2.0)
-                    inputs = inputs[:, :, None, :, :]
-                else:
-                    inputs = F.interpolate(inputs, scale_factor=2.0)
-        else:
-            # only interpolate 2D
-            b, c, t, h, w = inputs.shape
-            inputs = inputs.permute(0, 2, 1, 3, 4).reshape(b * t, c, h, w)
-            inputs = F.interpolate(inputs, scale_factor=2.0)
-            inputs = inputs.reshape(b, t, c, *inputs.shape[2:]).permute(0, 2, 1, 3, 4)
-
-        b, c, t, h, w = inputs.shape
-        inputs = inputs.permute(0, 2, 1, 3, 4).reshape(b * t, c, h, w)
-        inputs = self.conv(inputs)
-        inputs = inputs.reshape(b, t, *inputs.shape[1:]).permute(0, 2, 1, 3, 4)
-
-        return inputs
-
-
 class CogVideoXSafeConv3d(nn.Conv3d):
     r"""
     A 3D convolution layer that splits the input tensor into smaller parts to avoid OOM in CogVideoX Model.
@@ -269,6 +194,81 @@ class CogVideoXSpatialNorm3D(nn.Module):
         norm_f = self.norm_layer(f)
         new_f = norm_f * conv_y + conv_b
         return new_f, new_conv_cache
+
+
+class CogVideoXUpsample3D(nn.Module):
+    r"""
+    A 3D Upsample layer using in CogVideoX by Tsinghua University & ZhipuAI # Todo: Wait for paper relase.
+
+    Args:
+        in_channels (`int`):
+            Number of channels in the input image.
+        out_channels (`int`):
+            Number of channels produced by the convolution.
+        kernel_size (`int`, defaults to `3`):
+            Size of the convolving kernel.
+        stride (`int`, defaults to `1`):
+            Stride of the convolution.
+        padding (`int`, defaults to `1`):
+            Padding added to all four sides of the input.
+        compress_time (`bool`, defaults to `False`):
+            Whether or not to compress the time dimension.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int = 3,
+        stride: int = 1,
+        padding: int = 1,
+        compress_time: bool = False,
+    ) -> None:
+        super().__init__()
+
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+        self.compress_time = compress_time
+        
+        self.auto_split_process = True
+        self.first_frame_flag = False
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        if self.compress_time:
+            if self.auto_split_process:
+                if inputs.shape[2] > 1 and inputs.shape[2] % 2 == 1:
+                    # split first frame
+                    x_first, x_rest = inputs[:, :, 0], inputs[:, :, 1:]
+
+                    x_first = F.interpolate(x_first, scale_factor=2.0)
+                    x_rest = F.interpolate(x_rest, scale_factor=2.0)
+                    x_first = x_first[:, :, None, :, :]
+                    inputs = torch.cat([x_first, x_rest], dim=2)
+                elif inputs.shape[2] > 1:
+                    inputs = F.interpolate(inputs, scale_factor=2.0)
+                else:
+                    inputs = inputs.squeeze(2)
+                    inputs = F.interpolate(inputs, scale_factor=2.0)
+                    inputs = inputs[:, :, None, :, :]
+            else:
+                if self.first_frame_flag:
+                    inputs = inputs.squeeze(2)
+                    inputs = F.interpolate(inputs, scale_factor=2.0)
+                    inputs = inputs[:, :, None, :, :]
+                else:
+                    inputs = F.interpolate(inputs, scale_factor=2.0)
+        else:
+            # only interpolate 2D
+            b, c, t, h, w = inputs.shape
+            inputs = inputs.permute(0, 2, 1, 3, 4).reshape(b * t, c, h, w)
+            inputs = F.interpolate(inputs, scale_factor=2.0)
+            inputs = inputs.reshape(b, t, c, *inputs.shape[2:]).permute(0, 2, 1, 3, 4)
+
+        b, c, t, h, w = inputs.shape
+        inputs = inputs.permute(0, 2, 1, 3, 4).reshape(b * t, c, h, w)
+        inputs = self.conv(inputs)
+        inputs = inputs.reshape(b, t, *inputs.shape[1:]).permute(0, 2, 1, 3, 4)
+
+        return inputs
 
 
 class CogVideoXResnetBlock3D(nn.Module):
@@ -508,7 +508,7 @@ class CogVideoXDownBlock3D(nn.Module):
                     hidden_states,
                     temb,
                     zq,
-                    conv_cache=conv_cache.get(conv_cache_key),
+                    conv_cache.get(conv_cache_key),
                 )
             else:
                 hidden_states, new_conv_cache[conv_cache_key] = resnet(
@@ -606,7 +606,7 @@ class CogVideoXMidBlock3D(nn.Module):
                     return create_forward
 
                 hidden_states, new_conv_cache[conv_cache_key] = torch.utils.checkpoint.checkpoint(
-                    create_custom_forward(resnet), hidden_states, temb, zq, conv_cache=conv_cache.get(conv_cache_key)
+                    create_custom_forward(resnet), hidden_states, temb, zq, conv_cache.get(conv_cache_key)
                 )
             else:
                 hidden_states, new_conv_cache[conv_cache_key] = resnet(
@@ -724,7 +724,7 @@ class CogVideoXUpBlock3D(nn.Module):
                     hidden_states,
                     temb,
                     zq,
-                    conv_cache=conv_cache.get(conv_cache_key),
+                    conv_cache.get(conv_cache_key),
                 )
             else:
                 hidden_states, new_conv_cache[conv_cache_key] = resnet(
@@ -864,7 +864,7 @@ class CogVideoXEncoder3D(nn.Module):
                     hidden_states,
                     temb,
                     None,
-                    conv_cache=conv_cache.get(conv_cache_key),
+                    conv_cache.get(conv_cache_key),
                 )
 
             # 2. Mid
@@ -873,7 +873,7 @@ class CogVideoXEncoder3D(nn.Module):
                 hidden_states,
                 temb,
                 None,
-                conv_cache=conv_cache.get("mid_block"),
+                conv_cache.get("mid_block"),
             )
         else:
             # 1. Down
@@ -1028,7 +1028,7 @@ class CogVideoXDecoder3D(nn.Module):
                 hidden_states,
                 temb,
                 sample,
-                conv_cache=conv_cache.get("mid_block"),
+                conv_cache.get("mid_block"),
             )
 
             # 2. Up
@@ -1039,7 +1039,7 @@ class CogVideoXDecoder3D(nn.Module):
                     hidden_states,
                     temb,
                     sample,
-                    conv_cache=conv_cache.get(conv_cache_key),
+                    conv_cache.get(conv_cache_key),
                 )
         else:
             # 1. Mid
@@ -1163,6 +1163,7 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
 
         self.use_slicing = False
         self.use_tiling = False
+        self.auto_split_process = False
 
         # Can be increased to decode more latent frames at once, but comes at a reasonable memory cost and it is not
         # recommended because the temporal parts of the VAE, here, are tricky to understand.
@@ -1200,18 +1201,6 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
     def _set_gradient_checkpointing(self, module, value=False):
         if isinstance(module, (CogVideoXEncoder3D, CogVideoXDecoder3D)):
             module.gradient_checkpointing = value
-            
-    def _set_first_frame(self):
-        for name, module in self.named_modules():
-            if isinstance(module, CogVideoXUpsample3D):
-                module.auto_split_process = False
-                module.first_frame_flag = True
-
-    def _set_rest_frame(self):
-        for name, module in self.named_modules():
-            if isinstance(module, CogVideoXUpsample3D):
-                module.auto_split_process = False
-                module.first_frame_flag = False
 
     def enable_tiling(
         self,
@@ -1269,6 +1258,27 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
         decoding in one step.
         """
         self.use_slicing = False
+            
+    def _set_first_frame(self):
+        for name, module in self.named_modules():
+            if isinstance(module, CogVideoXUpsample3D):
+                module.auto_split_process = False
+                module.first_frame_flag = True
+
+    def _set_rest_frame(self):
+        for name, module in self.named_modules():
+            if isinstance(module, CogVideoXUpsample3D):
+                module.auto_split_process = False
+                module.first_frame_flag = False
+
+    def enable_auto_split_process(self) -> None:
+        self.auto_split_process = True
+        for name, module in self.named_modules():
+            if isinstance(module, CogVideoXUpsample3D):
+                module.auto_split_process = True
+
+    def disable_auto_split_process(self) -> None:
+        self.auto_split_process = False
 
     def _encode(self, x: torch.Tensor) -> torch.Tensor:
         batch_size, num_channels, num_frames, height, width = x.shape
@@ -1330,30 +1340,46 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
         if self.use_tiling and (width > self.tile_latent_min_width or height > self.tile_latent_min_height):
             return self.tiled_decode(z, return_dict=return_dict)
 
-        conv_cache = None
-        start_frame = 0
-        end_frame = 1
-        dec = []
+        if self.auto_split_process:
+            frame_batch_size = self.num_latent_frames_batch_size
+            num_batches = max(num_frames // frame_batch_size, 1)
+            conv_cache = None
+            dec = []
 
-        self._set_first_frame()
-        z_intermediate = z[:, :, start_frame:end_frame]
-        if self.post_quant_conv is not None:
-            z_intermediate = self.post_quant_conv(z_intermediate)
-        z_intermediate, conv_cache = self.decoder(z_intermediate, conv_cache=conv_cache)
-        dec.append(z_intermediate)
+            for i in range(num_batches):
+                remaining_frames = num_frames % frame_batch_size
+                start_frame = frame_batch_size * i + (0 if i == 0 else remaining_frames)
+                end_frame = frame_batch_size * (i + 1) + remaining_frames
+                z_intermediate = z[:, :, start_frame:end_frame]
+                if self.post_quant_conv is not None:
+                    z_intermediate = self.post_quant_conv(z_intermediate)
+                z_intermediate, conv_cache = self.decoder(z_intermediate, conv_cache=conv_cache)
+                dec.append(z_intermediate)
+        else:
+            conv_cache = None
+            start_frame = 0
+            end_frame = 1
+            dec = []
 
-        self._set_rest_frame()
-        start_frame = end_frame
-        end_frame += self.num_latent_frames_batch_size
-
-        while start_frame < num_frames:
+            self._set_first_frame()
             z_intermediate = z[:, :, start_frame:end_frame]
             if self.post_quant_conv is not None:
                 z_intermediate = self.post_quant_conv(z_intermediate)
             z_intermediate, conv_cache = self.decoder(z_intermediate, conv_cache=conv_cache)
             dec.append(z_intermediate)
+
+            self._set_rest_frame()
             start_frame = end_frame
             end_frame += self.num_latent_frames_batch_size
+
+            while start_frame < num_frames:
+                z_intermediate = z[:, :, start_frame:end_frame]
+                if self.post_quant_conv is not None:
+                    z_intermediate = self.post_quant_conv(z_intermediate)
+                z_intermediate, conv_cache = self.decoder(z_intermediate, conv_cache=conv_cache)
+                dec.append(z_intermediate)
+                start_frame = end_frame
+                end_frame += self.num_latent_frames_batch_size
 
         dec = torch.cat(dec, dim=2)
 
@@ -1517,30 +1543,34 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
         for i in range(0, height, overlap_height):
             row = []
             for j in range(0, width, overlap_width):
-                conv_cache = None
-                start_frame = 0
-                end_frame = 1
-                dec = []
+                if self.auto_split_process:
+                    num_batches = max(num_frames // frame_batch_size, 1)
+                    conv_cache = None
+                    time = []
 
-                tile = z[
-                    :,
-                    :,
-                    start_frame:end_frame,
-                    i : i + self.tile_latent_min_height,
-                    j : j + self.tile_latent_min_width,
-                ]
+                    for k in range(num_batches):
+                        remaining_frames = num_frames % frame_batch_size
+                        start_frame = frame_batch_size * k + (0 if k == 0 else remaining_frames)
+                        end_frame = frame_batch_size * (k + 1) + remaining_frames
+                        tile = z[
+                            :,
+                            :,
+                            start_frame:end_frame,
+                            i : i + self.tile_latent_min_height,
+                            j : j + self.tile_latent_min_width,
+                        ]
+                        if self.post_quant_conv is not None:
+                            tile = self.post_quant_conv(tile)
+                        tile, conv_cache = self.decoder(tile, conv_cache=conv_cache)
+                        time.append(tile)
 
-                self._set_first_frame()
-                if self.post_quant_conv is not None:
-                    tile = self.post_quant_conv(tile)
-                tile, conv_cache = self.decoder(tile, conv_cache=conv_cache)
-                dec.append(tile)
-                
-                self._set_rest_frame()
-                start_frame = end_frame
-                end_frame += self.num_latent_frames_batch_size
+                    row.append(torch.cat(time, dim=2))
+                else:
+                    conv_cache = None
+                    start_frame = 0
+                    end_frame = 1
+                    dec = []
 
-                while start_frame < num_frames:
                     tile = z[
                         :,
                         :,
@@ -1548,14 +1578,33 @@ class AutoencoderKLCogVideoX(ModelMixin, ConfigMixin, FromOriginalModelMixin):
                         i : i + self.tile_latent_min_height,
                         j : j + self.tile_latent_min_width,
                     ]
+
+                    self._set_first_frame()
                     if self.post_quant_conv is not None:
                         tile = self.post_quant_conv(tile)
                     tile, conv_cache = self.decoder(tile, conv_cache=conv_cache)
                     dec.append(tile)
+                    
+                    self._set_rest_frame()
                     start_frame = end_frame
                     end_frame += self.num_latent_frames_batch_size
 
-                row.append(torch.cat(dec, dim=2))
+                    while start_frame < num_frames:
+                        tile = z[
+                            :,
+                            :,
+                            start_frame:end_frame,
+                            i : i + self.tile_latent_min_height,
+                            j : j + self.tile_latent_min_width,
+                        ]
+                        if self.post_quant_conv is not None:
+                            tile = self.post_quant_conv(tile)
+                        tile, conv_cache = self.decoder(tile, conv_cache=conv_cache)
+                        dec.append(tile)
+                        start_frame = end_frame
+                        end_frame += self.num_latent_frames_batch_size
+
+                    row.append(torch.cat(dec, dim=2))
             rows.append(row)
 
         result_rows = []

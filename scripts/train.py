@@ -1376,10 +1376,13 @@ def main():
                     select_frames = [_tmp for _tmp in list(range(sample_n_frames_bucket_interval + 1, args.video_sample_n_frames + sample_n_frames_bucket_interval, sample_n_frames_bucket_interval))]
                     select_frames_prob = np.array(_create_special_list(len(select_frames)))
                     
-                    if rng is None:
-                        temp_n_frames = np.random.choice(select_frames, p = select_frames_prob)
+                    if len(select_frames) != 0:
+                        if rng is None:
+                            temp_n_frames = np.random.choice(select_frames, p = select_frames_prob)
+                        else:
+                            temp_n_frames = rng.choice(select_frames, p = select_frames_prob)
                     else:
-                        temp_n_frames = rng.choice(select_frames, p = select_frames_prob)
+                        temp_n_frames = 1
 
                     # Magvae needs the number of frames to be 4n + 1.
                     local_latent_length = (temp_n_frames - 1) // sample_n_frames_bucket_interval + 1

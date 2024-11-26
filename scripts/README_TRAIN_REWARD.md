@@ -226,6 +226,13 @@ site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
 wget -O $site_packages/hpsv2/src/open_clip/ https://github.com/tgxs002/HPSv2/raw/refs/heads/master/hpsv2/src/open_clip/bpe_simple_vocab_16e6.txt.gz
 ```
 
+> [!NOTE]
+> The computation of the HPDv2 depends on the ViT-H-14.
+Please run `export HF_ENDPOINT=https://hf-mirror.com` if you cannot access to huggingface.com.
+
+> If you run HPDv2 in linux and get error like `ModuleNotFoundError: No module named 'tkinter'`.
+Please run `sudo apt install python3-tk` to install tkinter.
+
 ### Important Args
 + `rank`: The size of LoRA model. The higher the LoRA rank, the more parameters it has, and the more it can learn (including some unnecessary information).
 Bt default, we set the rank to 128. You can lower this value to reduce training GPU memory and the LoRA file size.

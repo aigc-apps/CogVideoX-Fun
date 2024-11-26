@@ -40,7 +40,6 @@ from accelerate.logging import get_logger
 from accelerate.state import AcceleratorState
 from accelerate.utils import ProjectConfiguration, set_seed
 from diffusers import DDIMScheduler, CogVideoXDPMScheduler
-from diffusers.models.embeddings import get_3d_rotary_pos_embed
 from diffusers.optimization import get_scheduler
 from diffusers.utils import check_min_version, deprecate, is_wandb_available
 from diffusers.utils.torch_utils import is_compiled_module
@@ -59,8 +58,9 @@ for project_root in project_roots:
 import cogvideox.reward.reward_fn as reward_fn
 from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
-    CogVideoX_Fun_Pipeline_Inpaint, get_resize_crop_region_for_grid
+from cogvideox.pipeline.pipeline_cogvideox_inpaint import (
+    CogVideoX_Fun_Pipeline_Inpaint, add_noise_to_reference_video,
+    get_3d_rotary_pos_embed, get_resize_crop_region_for_grid)
 from cogvideox.utils.lora_utils import create_network, merge_lora
 from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 
@@ -978,6 +978,9 @@ def main():
     vae.to(accelerator.device, dtype=weight_dtype)
     transformer3d.to(accelerator.device, dtype=weight_dtype)
     text_encoder.to(accelerator.device)
+
+    # Enable auto split process for vae
+    vae.enable_auto_split_process()
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(prompt_list) / args.train_batch_size / args.gradient_accumulation_steps)
