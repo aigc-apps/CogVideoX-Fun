@@ -34,6 +34,7 @@ Some parameters in the sh file can be confusing, and they are explained in this 
   - At 768x768 resolution, the number of video frames is 21;
   - At 1024x1024 resolution, the number of video frames is 9;
   - These resolutions combined with their corresponding lengths allow the model to generate videos of different sizes.
+- `resume_from_checkpoint` is used to set the training should be resumed from a previous checkpoint. Use a path or `"latest"` to automatically select the last available checkpoint.
 
 CogVideoX-Fun without deepspeed:
 ```sh
