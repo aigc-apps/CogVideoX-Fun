@@ -694,8 +694,8 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                     from safetensors.torch import load_file, safe_open
                     model_files_safetensors = glob.glob(os.path.join(pretrained_model_path, "*.safetensors"))
                     state_dict = {}
-                    for model_file_safetensors in model_files_safetensors:
-                        _state_dict = load_file(model_file_safetensors)
+                    for _model_file_safetensors in model_files_safetensors:
+                        _state_dict = load_file(_model_file_safetensors)
                         for key in _state_dict:
                             state_dict[key] = _state_dict[key]
                 model._convert_deprecated_attention_blocks(state_dict)
@@ -741,8 +741,8 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
             from safetensors.torch import load_file, safe_open
             model_files_safetensors = glob.glob(os.path.join(pretrained_model_path, "*.safetensors"))
             state_dict = {}
-            for model_file_safetensors in model_files_safetensors:
-                _state_dict = load_file(model_file_safetensors)
+            for _model_file_safetensors in model_files_safetensors:
+                _state_dict = load_file(_model_file_safetensors)
                 for key in _state_dict:
                     state_dict[key] = _state_dict[key]
         
