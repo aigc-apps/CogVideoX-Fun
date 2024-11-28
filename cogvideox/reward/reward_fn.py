@@ -58,6 +58,7 @@ class AestheticReward(BaseReward):
             assert "clip-vit-large-patch14" in encoder_path.lower()
             self.model = ImprovedAestheticPredictor(encoder_path=self.encoder_path, predictor_path=self.predictor_path)
             # https://huggingface.co/openai/clip-vit-large-patch14/blob/main/preprocessor_config.json
+            # TODO: [transforms.Resize(224), transforms.CenterCrop(224)] for any aspect ratio.
             self.transform = transforms.Compose([
                 transforms.Resize((224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
                 transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]),
@@ -138,6 +139,7 @@ class HPSReward(BaseReward):
         self.tokenizer = get_tokenizer("ViT-H-14")
 
         # https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K/blob/main/preprocessor_config.json
+        # TODO: [transforms.Resize(224), transforms.CenterCrop(224)] for any aspect ratio.
         self.transform = transforms.Compose([
             transforms.Resize((224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
             transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]),
@@ -274,6 +276,7 @@ class MPSReward(BaseReward):
 
         processor_name_or_path = "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
         # https://huggingface.co/laion/CLIP-ViT-H-14-laion2B-s32B-b79K/blob/main/preprocessor_config.json
+        # TODO: [transforms.Resize(224), transforms.CenterCrop(224)] for any aspect ratio.
         self.transform = transforms.Compose([
             transforms.Resize((224, 224), interpolation=transforms.InterpolationMode.BICUBIC),
             transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]),

@@ -155,7 +155,7 @@ We provide pre-trained models (i.e. LoRAs) along with the training script. You c
 </table>
 
 > [!NOTE]
-> The above test prompts are from <a href="https://github.com/Vchitect/VBench/tree/master/prompts">VBench</a>. All videos are generated with lora weight 0.7.
+> The above test prompts are from <a href="https://github.com/KaiyueSun98/T2V-CompBench">T2V-CompBench</a>. All videos are generated with lora weight 0.7.
 
 ## Model Zoo
 | Name | Base Model | Reward Model | Hugging Face | Description |
@@ -223,8 +223,12 @@ Please read the [quick-start](https://github.com/aigc-apps/CogVideoX-Fun/blob/ma
 # For HPS reward model only
 pip install hpsv2
 site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+wget -O $site_packages/hpsv2/src/open_clip/factory.py https://pai-aigc-photog.oss-cn-hangzhou.aliyuncs.com/easyanimate/package/patches/hpsv2_src_open_clip_factory_patches.py
 wget -O $site_packages/hpsv2/src/open_clip/ https://github.com/tgxs002/HPSv2/raw/refs/heads/master/hpsv2/src/open_clip/bpe_simple_vocab_16e6.txt.gz
 ```
+
+> [!NOTE]
+> Since some models will be downloaded automatically from HuggingFace, Please run `HF_ENDPOINT=https://hf-mirror.com sh scripts/train_reward_lora.sh` if you cannot access to huggingface.com.
 
 ### Important Args
 + `rank`: The size of LoRA model. The higher the LoRA rank, the more parameters it has, and the more it can learn (including some unnecessary information).
@@ -234,7 +238,8 @@ Bt default, we set the rank to 128. You can lower this value to reduce training 
 We randomly selected 701 prompts from [MovieGenBench](https://github.com/facebookresearch/MovieGenBench/blob/main/benchmark/MovieGenVideoBench.txt).
 + `train_sample_height` and `train_sample_width`: The resolution of the sampled training videos. We found 
 training at a 256x256 resolution can generalize to any other resolution. Reducing the resolution can save GPU memory 
-during training, but it is recommended that the resolution should be equal to or greater than the image input resolution of the reward model.
+during training, but it is recommended that the resolution should be equal to or greater than the image input resolution of the reward model. 
+Due to the resize and crop preprocessing operations, we suggest using a 1:1 aspect ratio.
 + `reward_fn` and `reward_fn_kwargs`: The reward model name and its keyword arguments. All supported reward models 
 (Aesthetic Predictor [v2](https://github.com/christophschuhmann/improved-aesthetic-predictor)/[v2.5](https://github.com/discus0434/aesthetic-predictor-v2-5), 
 [HPS](https://github.com/tgxs002/HPSv2) v2/v2.1, [PickScore](https://github.com/yuvalkirstain/PickScore) and [MPS](https://github.com/Kwai-Kolors/MPS)) 
