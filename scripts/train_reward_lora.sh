@@ -2,6 +2,8 @@ export MODEL_NAME="alibaba-pai/CogVideoX-Fun-V1.1-2b-InP"
 export TRAIN_PROMPT_PATH="MovieGenVideoBench_train.txt"
 # Performing validation simultaneously with training will increase time and GPU memory usage.
 export VALIDATION_PROMPT_PATH="MovieGenVideoBench_val.txt"
+# Use 49 for V1 and V1.1; Use 85 for V1.5.
+export VIDEO_LENGTH=49
 
 accelerate launch --num_processes=1 --mixed_precision="bf16" scripts/train_reward_lora.py \
   --pretrained_model_name_or_path=$MODEL_NAME \

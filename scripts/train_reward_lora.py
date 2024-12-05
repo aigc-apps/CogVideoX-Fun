@@ -119,7 +119,6 @@ def log_validation(vae, text_encoder, tokenizer, transformer3d, network, loss_fn
     validation_loss, validation_reward = 0, 0
     for i in range(len(validation_prompts_idx)):
         validation_idx, validation_prompt = validation_prompts_idx[i]
-        logger.info(f"Process index: {accelerator.process_index}, validation_idx: {validation_idx}, validation_prompt: {validation_prompt}")
         with torch.no_grad():
             with torch.autocast("cuda", dtype=weight_dtype):
                 video_length = int((args.video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if args.video_length != 1 else 1
@@ -1062,12 +1061,11 @@ def main():
     )
     
     for epoch in range(first_epoch, args.num_train_epochs):
-        train_dataloader_iterations = 100
         train_loss = 0.0
         train_reward = 0.0
         # In the following training loop, randomly select training prompts and use the 
         # `CogVideoX_Fun_Pipeline_Inpaint` to sample videos, calculate rewards, and update the network.
-        for _ in range(train_dataloader_iterations):
+        for _ in range(num_update_steps_per_epoch):
             # train_prompt = random.sample(prompt_list, args.train_batch_size)
             train_prompt = random.choices(prompt_list, k=args.train_batch_size)
             logger.info(f"train_prompt: {train_prompt}")
