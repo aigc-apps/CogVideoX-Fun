@@ -36,6 +36,8 @@ lora_path           = None
 
 # Other params
 sample_size         = [384, 672]
+# V1.0 and V1.1 support up to 49 frames of video generation,
+# while V1.5 supports up to 85 frames.  
 video_length        = 49
 fps                 = 8
 
@@ -62,6 +64,7 @@ save_path               = "samples/cogvideox-fun-videos_i2v"
 transformer = CogVideoXTransformer3DModel.from_pretrained_2d(
     model_name, 
     subfolder="transformer",
+    low_cpu_mem_usage=True,
 ).to(weight_dtype)
 
 if transformer_path is not None:
@@ -140,17 +143,23 @@ if lora_path is not None:
     pipeline = merge_lora(pipeline, lora_path, lora_weight)
 
 if partial_video_length is not None:
+    partial_video_length = int((partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
+    latent_frames = (partial_video_length - 1) // vae.config.temporal_compression_ratio + 1
+    if partial_video_length != 1 and transformer.config.patch_size_t is not None and latent_frames % transformer.config.patch_size_t != 0:
+        additional_frames = transformer.config.patch_size_t - latent_frames % transformer.config.patch_size_t
+        partial_video_length += additional_frames * vae.config.temporal_compression_ratio
+        
     init_frames = 0
     last_frames = init_frames + partial_video_length
     while init_frames < video_length:
         if last_frames >= video_length:
-            if pipeline.vae.quant_conv.weight.ndim==5:
-                mini_batch_encoder = 4
-                _partial_video_length = video_length - init_frames
-                _partial_video_length = int((_partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1
-            else:
-                _partial_video_length = video_length - init_frames
-            
+            _partial_video_length = video_length - init_frames
+            _partial_video_length = int((_partial_video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1
+            latent_frames = (_partial_video_length - 1) // vae.config.temporal_compression_ratio + 1
+            if _partial_video_length != 1 and transformer.config.patch_size_t is not None and latent_frames % transformer.config.patch_size_t != 0:
+                additional_frames = transformer.config.patch_size_t - latent_frames % transformer.config.patch_size_t
+                _partial_video_length += additional_frames * vae.config.temporal_compression_ratio
+
             if _partial_video_length <= 0:
                 break
         else:
@@ -199,6 +208,10 @@ if partial_video_length is not None:
         last_frames = init_frames + _partial_video_length
 else:
     video_length = int((video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
+    latent_frames = (video_length - 1) // vae.config.temporal_compression_ratio + 1
+    if video_length != 1 and transformer.config.patch_size_t is not None and latent_frames % transformer.config.patch_size_t != 0:
+        additional_frames = transformer.config.patch_size_t - latent_frames % transformer.config.patch_size_t
+        video_length += additional_frames * vae.config.temporal_compression_ratio
     input_video, input_video_mask, clip_image = get_image_to_video_latent(validation_image_start, validation_image_end, video_length=video_length, sample_size=sample_size)
 
     with torch.no_grad():

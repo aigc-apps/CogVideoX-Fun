@@ -120,7 +120,8 @@ class CogVideoX_Fun_Controller:
         # Get Transformer
         self.transformer = CogVideoXTransformer3DModel.from_pretrained_2d(
             diffusion_transformer_dropdown, 
-            subfolder="transformer", 
+            subfolder="transformer",
+            low_cpu_mem_usage=True, 
         ).to(self.weight_dtype)
         
         # Get pipeline
@@ -570,6 +571,12 @@ def ui(low_gpu_memory_mode, weight_dtype):
                     height_slider    = gr.Slider(label="Height (视频高度)",           value=384, minimum=128, maximum=1344, step=16)
                     base_resolution  = gr.Radio(label="Base Resolution of Pretrained Models", value=512, choices=[512, 768, 960], visible=False)
 
+                    gr.Markdown(
+                        """
+                        V1.0 and V1.1 support up to 49 frames of video generation, while V1.5 supports up to 85 frames.  
+                        (V1.0和V1.1支持最大49帧视频生成，V1.5支持最大85帧视频生成。)
+                        """
+                    )
                     with gr.Group():
                         generation_method = gr.Radio(
                             ["Video Generation", "Image Generation", "Long Video Generation"],
@@ -577,9 +584,9 @@ def ui(low_gpu_memory_mode, weight_dtype):
                             show_label=False,
                         )
                         with gr.Row():
-                            length_slider = gr.Slider(label="Animation length (视频帧数)", value=49, minimum=1,   maximum=49,  step=4)
+                            length_slider = gr.Slider(label="Animation length (视频帧数)", value=49, minimum=1,   maximum=85,  step=4)
                             overlap_video_length = gr.Slider(label="Overlap length (视频续写的重叠帧数)", value=4, minimum=1,   maximum=4,  step=1, visible=False)
-                            partial_video_length = gr.Slider(label="Partial video generation length (每个部分的视频生成帧数)", value=25, minimum=5,   maximum=49,  step=4, visible=False)
+                            partial_video_length = gr.Slider(label="Partial video generation length (每个部分的视频生成帧数)", value=25, minimum=5,   maximum=85,  step=4, visible=False)
                     
                     source_method = gr.Radio(
                         ["Text to Video (文本到视频)", "Image to Video (图片到视频)", "Video to Video (视频到视频)", "Video Control (视频控制)"],
@@ -626,7 +633,7 @@ def ui(low_gpu_memory_mode, weight_dtype):
                             gr.Markdown(
                                 """
                                 - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
-                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
                                 """
                             )
                             validation_video_mask = gr.Image(
@@ -676,9 +683,9 @@ def ui(low_gpu_memory_mode, weight_dtype):
 
             def upload_generation_method(generation_method):
                 if generation_method == "Video Generation":
-                    return [gr.update(visible=True, maximum=49, value=49), gr.update(visible=False), gr.update(visible=False)]
+                    return [gr.update(visible=True, maximum=85, value=49, interactive=True), gr.update(visible=False), gr.update(visible=False)]
                 elif generation_method == "Image Generation":
-                    return [gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)]
+                    return [gr.update(minimum=1, maximum=1, value=1, interactive=False), gr.update(visible=False), gr.update(visible=False)]
                 else:
                     return [gr.update(visible=True, maximum=1344), gr.update(visible=True), gr.update(visible=True)]
             generation_method.change(
@@ -765,7 +772,8 @@ class CogVideoX_Fun_Controller_Modelscope:
         # Get Transformer
         self.transformer = CogVideoXTransformer3DModel.from_pretrained_2d(
             model_name, 
-            subfolder="transformer", 
+            subfolder="transformer",
+            low_cpu_mem_usage=True, 
         ).to(self.weight_dtype)
         
         # Get pipeline
@@ -1101,6 +1109,12 @@ def ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, w
                     height_slider    = gr.Slider(label="Height (视频高度)",           value=384, minimum=128, maximum=1280, step=16, interactive=False)
                     base_resolution  = gr.Radio(label="Base Resolution of Pretrained Models", value=512, choices=[512, 768, 960], interactive=False, visible=False)
 
+                    gr.Markdown(
+                        """
+                        V1.0 and V1.1 support up to 49 frames of video generation, while V1.5 supports up to 85 frames.  
+                        (V1.0和V1.1支持最大49帧视频生成，V1.5支持最大85帧视频生成。)
+                        """
+                    )
                     with gr.Group():
                         generation_method = gr.Radio(
                             ["Video Generation", "Image Generation"],
@@ -1108,9 +1122,9 @@ def ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, w
                             show_label=False,
                             visible=True,
                         )
-                        length_slider = gr.Slider(label="Animation length (视频帧数)", value=49, minimum=5,   maximum=49,  step=4)
+                        length_slider = gr.Slider(label="Animation length (视频帧数)", value=49, minimum=5,   maximum=85,  step=4)
                         overlap_video_length = gr.Slider(label="Overlap length (视频续写的重叠帧数)", value=4, minimum=1,   maximum=4,  step=1, visible=False)
-                        partial_video_length = gr.Slider(label="Partial video generation length (每个部分的视频生成帧数)", value=25, minimum=5,   maximum=49,  step=4, visible=False)
+                        partial_video_length = gr.Slider(label="Partial video generation length (每个部分的视频生成帧数)", value=25, minimum=5,   maximum=85,  step=4, visible=False)
                         
                     source_method = gr.Radio(
                         ["Text to Video (文本到视频)", "Image to Video (图片到视频)", "Video to Video (视频到视频)", "Video Control (视频控制)"],
@@ -1155,7 +1169,7 @@ def ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, w
                             gr.Markdown(
                                 """
                                 - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
-                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
                                 """
                             )
                             validation_video_mask = gr.Image(
@@ -1199,7 +1213,7 @@ def ui_modelscope(model_name, model_type, savedir_sample, low_gpu_memory_mode, w
 
             def upload_generation_method(generation_method):
                 if generation_method == "Video Generation":
-                    return gr.update(visible=True, minimum=8, maximum=49, value=49, interactive=True)
+                    return gr.update(visible=True, minimum=8, maximum=85, value=49, interactive=True)
                 elif generation_method == "Image Generation":
                     return gr.update(minimum=1, maximum=1, value=1, interactive=False)
             generation_method.change(
@@ -1473,6 +1487,12 @@ def ui_eas(model_name, savedir_sample):
                     height_slider    = gr.Slider(label="Height (视频高度)",           value=384, minimum=128, maximum=1280, step=16, interactive=False)
                     base_resolution  = gr.Radio(label="Base Resolution of Pretrained Models", value=512, choices=[512, 768, 960], interactive=False, visible=False)
 
+                    gr.Markdown(
+                        """
+                        V1.0 and V1.1 support up to 49 frames of video generation, while V1.5 supports up to 85 frames.  
+                        (V1.0和V1.1支持最大49帧视频生成，V1.5支持最大85帧视频生成。)
+                        """
+                    )
                     with gr.Group():
                         generation_method = gr.Radio(
                             ["Video Generation", "Image Generation"],
@@ -1480,7 +1500,7 @@ def ui_eas(model_name, savedir_sample):
                             show_label=False,
                             visible=True,
                         )
-                        length_slider = gr.Slider(label="Animation length (视频帧数)", value=49, minimum=5,   maximum=49,  step=4)
+                        length_slider = gr.Slider(label="Animation length (视频帧数)", value=49, minimum=5,   maximum=85,  step=4)
                     
                     source_method = gr.Radio(
                         ["Text to Video (文本到视频)", "Image to Video (图片到视频)", "Video to Video (视频到视频)"],
@@ -1524,7 +1544,7 @@ def ui_eas(model_name, savedir_sample):
                             gr.Markdown(
                                 """
                                 - Please set a larger denoise_strength when using validation_video_mask, such as 1.00 instead of 0.70  
-                                - (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
+                                (请设置更大的denoise_strength，当使用validation_video_mask的时候，比如1而不是0.70)
                                 """
                             )
                             validation_video_mask = gr.Image(
@@ -1557,7 +1577,7 @@ def ui_eas(model_name, savedir_sample):
 
             def upload_generation_method(generation_method):
                 if generation_method == "Video Generation":
-                    return gr.update(visible=True, minimum=5, maximum=49, value=49, interactive=True)
+                    return gr.update(visible=True, minimum=5, maximum=85, value=49, interactive=True)
                 elif generation_method == "Image Generation":
                     return gr.update(minimum=1, maximum=1, value=1, interactive=False)
             generation_method.change(
