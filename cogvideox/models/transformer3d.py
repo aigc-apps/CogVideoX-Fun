@@ -23,11 +23,12 @@ import torch.nn.functional as F
 from torch import nn
 
 from diffusers.configuration_utils import ConfigMixin, register_to_config
+from diffusers.models.embeddings import CogVideoXPatchEmbed
 from diffusers.utils import is_torch_version, logging
 from diffusers.utils.torch_utils import maybe_allow_in_graph
 from diffusers.models.attention import Attention, FeedForward
 from diffusers.models.attention_processor import AttentionProcessor, CogVideoXAttnProcessor2_0, FusedCogVideoXAttnProcessor2_0
-from diffusers.models.embeddings import TimestepEmbedding, Timesteps, get_3d_sincos_pos_embed
+from diffusers.models.embeddings import TimestepEmbedding, Timesteps, get_3d_sincos_pos_embed, get_2d_sincos_pos_embed
 from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from diffusers.models.modeling_utils import ModelMixin
 from diffusers.models.normalization import AdaLayerNorm, CogVideoXLayerNormZero
@@ -39,18 +40,79 @@ class CogVideoXPatchEmbed(nn.Module):
     def __init__(
         self,
         patch_size: int = 2,
+        patch_size_t: Optional[int] = None,
         in_channels: int = 16,
         embed_dim: int = 1920,
         text_embed_dim: int = 4096,
         bias: bool = True,
+        sample_width: int = 90,
+        sample_height: int = 60,
+        sample_frames: int = 49,
+        temporal_compression_ratio: int = 4,
+        max_text_seq_length: int = 226,
+        spatial_interpolation_scale: float = 1.875,
+        temporal_interpolation_scale: float = 1.0,
+        use_positional_embeddings: bool = True,
+        use_learned_positional_embeddings: bool = True,
     ) -> None:
         super().__init__()
-        self.patch_size = patch_size
 
-        self.proj = nn.Conv2d(
-            in_channels, embed_dim, kernel_size=(patch_size, patch_size), stride=patch_size, bias=bias
-        )
+        post_patch_height = sample_height // patch_size
+        post_patch_width = sample_width // patch_size
+        post_time_compression_frames = (sample_frames - 1) // temporal_compression_ratio + 1
+        self.num_patches = post_patch_height * post_patch_width * post_time_compression_frames
+        self.post_patch_height = post_patch_height
+        self.post_patch_width = post_patch_width
+        self.post_time_compression_frames = post_time_compression_frames
+        self.patch_size = patch_size
+        self.patch_size_t = patch_size_t
+        self.embed_dim = embed_dim
+        self.sample_height = sample_height
+        self.sample_width = sample_width
+        self.sample_frames = sample_frames
+        self.temporal_compression_ratio = temporal_compression_ratio
+        self.max_text_seq_length = max_text_seq_length
+        self.spatial_interpolation_scale = spatial_interpolation_scale
+        self.temporal_interpolation_scale = temporal_interpolation_scale
+        self.use_positional_embeddings = use_positional_embeddings
+        self.use_learned_positional_embeddings = use_learned_positional_embeddings
+
+        if patch_size_t is None:
+            # CogVideoX 1.0 checkpoints
+            self.proj = nn.Conv2d(
+                in_channels, embed_dim, kernel_size=(patch_size, patch_size), stride=patch_size, bias=bias
+            )
+        else:
+            # CogVideoX 1.5 checkpoints
+            self.proj = nn.Linear(in_channels * patch_size * patch_size * patch_size_t, embed_dim)
+
         self.text_proj = nn.Linear(text_embed_dim, embed_dim)
+
+        if use_positional_embeddings or use_learned_positional_embeddings:
+            persistent = use_learned_positional_embeddings
+            pos_embedding = self._get_positional_embeddings(sample_height, sample_width, sample_frames)
+            self.register_buffer("pos_embedding", pos_embedding, persistent=persistent)
+
+    def _get_positional_embeddings(self, sample_height: int, sample_width: int, sample_frames: int) -> torch.Tensor:
+        post_patch_height = sample_height // self.patch_size
+        post_patch_width = sample_width // self.patch_size
+        post_time_compression_frames = (sample_frames - 1) // self.temporal_compression_ratio + 1
+        num_patches = post_patch_height * post_patch_width * post_time_compression_frames
+
+        pos_embedding = get_3d_sincos_pos_embed(
+            self.embed_dim,
+            (post_patch_width, post_patch_height),
+            post_time_compression_frames,
+            self.spatial_interpolation_scale,
+            self.temporal_interpolation_scale,
+        )
+        pos_embedding = torch.from_numpy(pos_embedding).flatten(0, 1)
+        joint_pos_embedding = torch.zeros(
+            1, self.max_text_seq_length + num_patches, self.embed_dim, requires_grad=False
+        )
+        joint_pos_embedding.data[:, self.max_text_seq_length :].copy_(pos_embedding)
+
+        return joint_pos_embedding
 
     def forward(self, text_embeds: torch.Tensor, image_embeds: torch.Tensor):
         r"""
@@ -62,16 +124,45 @@ class CogVideoXPatchEmbed(nn.Module):
         """
         text_embeds = self.text_proj(text_embeds)
 
-        batch, num_frames, channels, height, width = image_embeds.shape
-        image_embeds = image_embeds.reshape(-1, channels, height, width)
-        image_embeds = self.proj(image_embeds)
-        image_embeds = image_embeds.view(batch, num_frames, *image_embeds.shape[1:])
-        image_embeds = image_embeds.flatten(3).transpose(2, 3)  # [batch, num_frames, height x width, channels]
-        image_embeds = image_embeds.flatten(1, 2)  # [batch, num_frames x height x width, channels]
+        text_batch_size, text_seq_length, text_channels = text_embeds.shape
+        batch_size, num_frames, channels, height, width = image_embeds.shape
+
+        if self.patch_size_t is None:
+            image_embeds = image_embeds.reshape(-1, channels, height, width)
+            image_embeds = self.proj(image_embeds)
+            image_embeds = image_embeds.view(batch_size, num_frames, *image_embeds.shape[1:])
+            image_embeds = image_embeds.flatten(3).transpose(2, 3)  # [batch, num_frames, height x width, channels]
+            image_embeds = image_embeds.flatten(1, 2)  # [batch, num_frames x height x width, channels]
+        else:
+            p = self.patch_size
+            p_t = self.patch_size_t
+
+            image_embeds = image_embeds.permute(0, 1, 3, 4, 2)
+            # b, f, h, w, c => b, f // 2, 2, h // 2, 2, w // 2, 2, c
+            image_embeds = image_embeds.reshape(
+                batch_size, num_frames // p_t, p_t, height // p, p, width // p, p, channels
+            )
+            # b, f // 2, 2, h // 2, 2, w // 2, 2, c => b, f // 2, h // 2, w // 2, c, 2, 2, 2
+            image_embeds = image_embeds.permute(0, 1, 3, 5, 7, 2, 4, 6).flatten(4, 7).flatten(1, 3)
+            image_embeds = self.proj(image_embeds)
 
         embeds = torch.cat(
             [text_embeds, image_embeds], dim=1
         ).contiguous()  # [batch, seq_length + num_frames x height x width, channels]
+
+        if self.use_positional_embeddings or self.use_learned_positional_embeddings:
+            seq_length = height * width * num_frames // (self.patch_size**2)
+            # pos_embeds = self.pos_embedding[:, : text_seq_length + seq_length]
+            pos_embeds = self.pos_embedding
+            emb_size = embeds.size()[-1]
+            pos_embeds_without_text = pos_embeds[:, text_seq_length: ].view(1, self.post_time_compression_frames, self.post_patch_height, self.post_patch_width, emb_size)
+            pos_embeds_without_text = pos_embeds_without_text.permute([0, 4, 1, 2, 3])
+            pos_embeds_without_text = F.interpolate(pos_embeds_without_text,size=[self.post_time_compression_frames, height // self.patch_size, width // self.patch_size], mode='trilinear', align_corners=False)
+            pos_embeds_without_text = pos_embeds_without_text.permute([0, 2, 3, 4, 1]).view(1, -1, emb_size)
+            pos_embeds = torch.cat([pos_embeds[:, :text_seq_length], pos_embeds_without_text], dim = 1)
+            pos_embeds = pos_embeds[:, : text_seq_length + seq_length]
+            embeds = embeds + pos_embeds
+
         return embeds
 
 @maybe_allow_in_graph
@@ -268,6 +359,7 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         sample_height: int = 60,
         sample_frames: int = 49,
         patch_size: int = 2,
+        patch_size_t: Optional[int] = None,
         temporal_compression_ratio: int = 4,
         max_text_seq_length: int = 226,
         activation_fn: str = "gelu-approximate",
@@ -277,42 +369,45 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         spatial_interpolation_scale: float = 1.875,
         temporal_interpolation_scale: float = 1.0,
         use_rotary_positional_embeddings: bool = False,
+        use_learned_positional_embeddings: bool = False,
+        patch_bias: bool = True,
         add_noise_in_inpaint_model: bool = False,
     ):
         super().__init__()
         inner_dim = num_attention_heads * attention_head_dim
-
-        post_patch_height = sample_height // patch_size
-        post_patch_width = sample_width // patch_size
-        post_time_compression_frames = (sample_frames - 1) // temporal_compression_ratio + 1
-        self.num_patches = post_patch_height * post_patch_width * post_time_compression_frames
-        self.post_patch_height = post_patch_height
-        self.post_patch_width = post_patch_width
-        self.post_time_compression_frames = post_time_compression_frames
-        self.patch_size = patch_size
+        self.patch_size_t = patch_size_t
+        if not use_rotary_positional_embeddings and use_learned_positional_embeddings:
+            raise ValueError(
+                "There are no CogVideoX checkpoints available with disable rotary embeddings and learned positional "
+                "embeddings. If you're using a custom model and/or believe this should be supported, please open an "
+                "issue at https://github.com/huggingface/diffusers/issues."
+            )
 
         # 1. Patch embedding
-        self.patch_embed = CogVideoXPatchEmbed(patch_size, in_channels, inner_dim, text_embed_dim, bias=True)
+        self.patch_embed = CogVideoXPatchEmbed(
+            patch_size=patch_size,
+            patch_size_t=patch_size_t,
+            in_channels=in_channels,
+            embed_dim=inner_dim,
+            text_embed_dim=text_embed_dim,
+            bias=patch_bias,
+            sample_width=sample_width,
+            sample_height=sample_height,
+            sample_frames=sample_frames,
+            temporal_compression_ratio=temporal_compression_ratio,
+            max_text_seq_length=max_text_seq_length,
+            spatial_interpolation_scale=spatial_interpolation_scale,
+            temporal_interpolation_scale=temporal_interpolation_scale,
+            use_positional_embeddings=not use_rotary_positional_embeddings,
+            use_learned_positional_embeddings=use_learned_positional_embeddings,
+        )
         self.embedding_dropout = nn.Dropout(dropout)
 
-        # 2. 3D positional embeddings
-        spatial_pos_embedding = get_3d_sincos_pos_embed(
-            inner_dim,
-            (post_patch_width, post_patch_height),
-            post_time_compression_frames,
-            spatial_interpolation_scale,
-            temporal_interpolation_scale,
-        )
-        spatial_pos_embedding = torch.from_numpy(spatial_pos_embedding).flatten(0, 1)
-        pos_embedding = torch.zeros(1, max_text_seq_length + self.num_patches, inner_dim, requires_grad=False)
-        pos_embedding.data[:, max_text_seq_length:].copy_(spatial_pos_embedding)
-        self.register_buffer("pos_embedding", pos_embedding, persistent=False)
-
-        # 3. Time embeddings
+        # 2. Time embeddings
         self.time_proj = Timesteps(inner_dim, flip_sin_to_cos, freq_shift)
         self.time_embedding = TimestepEmbedding(inner_dim, time_embed_dim, timestep_activation_fn)
 
-        # 4. Define spatio-temporal transformers blocks
+        # 3. Define spatio-temporal transformers blocks
         self.transformer_blocks = nn.ModuleList(
             [
                 CogVideoXBlock(
@@ -331,7 +426,7 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         )
         self.norm_final = nn.LayerNorm(inner_dim, norm_eps, norm_elementwise_affine)
 
-        # 5. Output blocks
+        # 4. Output blocks
         self.norm_out = AdaLayerNorm(
             embedding_dim=time_embed_dim,
             output_dim=2 * inner_dim,
@@ -339,7 +434,15 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
             norm_eps=norm_eps,
             chunk_dim=1,
         )
-        self.proj_out = nn.Linear(inner_dim, patch_size * patch_size * out_channels)
+
+        if patch_size_t is None:
+            # For CogVideox 1.0
+            output_dim = patch_size * patch_size * out_channels
+        else:
+            # For CogVideoX 1.5
+            output_dim = patch_size * patch_size * patch_size_t * out_channels
+
+        self.proj_out = nn.Linear(inner_dim, output_dim)
 
         self.gradient_checkpointing = False
 
@@ -458,6 +561,15 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         return_dict: bool = True,
     ):
         batch_size, num_frames, channels, height, width = hidden_states.shape
+        if num_frames == 1 and self.patch_size_t is not None:
+            hidden_states = torch.cat([hidden_states, torch.zeros_like(hidden_states)], dim=1)
+            if inpaint_latents is not None:
+                inpaint_latents = torch.concat([inpaint_latents, torch.zeros_like(inpaint_latents)], dim=1)
+            if control_latents is not None:
+                control_latents = torch.concat([control_latents, torch.zeros_like(control_latents)], dim=1)
+            local_num_frames = num_frames + 1
+        else:
+            local_num_frames = num_frames
 
         # 1. Time embedding
         timesteps = timestep
@@ -475,27 +587,13 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
         if control_latents is not None:
             hidden_states = torch.concat([hidden_states, control_latents], 2)
         hidden_states = self.patch_embed(encoder_hidden_states, hidden_states)
+        hidden_states = self.embedding_dropout(hidden_states)
 
-        # 3. Position embedding
         text_seq_length = encoder_hidden_states.shape[1]
-        if not self.config.use_rotary_positional_embeddings:
-            seq_length = height * width * num_frames // (self.config.patch_size**2)
-            # pos_embeds = self.pos_embedding[:, : text_seq_length + seq_length]
-            pos_embeds = self.pos_embedding
-            emb_size = hidden_states.size()[-1]
-            pos_embeds_without_text = pos_embeds[:, text_seq_length: ].view(1, self.post_time_compression_frames, self.post_patch_height, self.post_patch_width, emb_size)
-            pos_embeds_without_text = pos_embeds_without_text.permute([0, 4, 1, 2, 3])
-            pos_embeds_without_text = F.interpolate(pos_embeds_without_text,size=[self.post_time_compression_frames, height // self.config.patch_size, width // self.config.patch_size],mode='trilinear',align_corners=False)
-            pos_embeds_without_text = pos_embeds_without_text.permute([0, 2, 3, 4, 1]).view(1, -1, emb_size)
-            pos_embeds = torch.cat([pos_embeds[:, :text_seq_length], pos_embeds_without_text], dim = 1)
-            pos_embeds = pos_embeds[:, : text_seq_length + seq_length]
-            hidden_states = hidden_states + pos_embeds
-            hidden_states = self.embedding_dropout(hidden_states)
-
         encoder_hidden_states = hidden_states[:, :text_seq_length]
         hidden_states = hidden_states[:, text_seq_length:]
 
-        # 4. Transformer blocks
+        # 3. Transformer blocks
         for i, block in enumerate(self.transformer_blocks):
             if self.training and self.gradient_checkpointing:
 
@@ -531,21 +629,35 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
             hidden_states = self.norm_final(hidden_states)
             hidden_states = hidden_states[:, text_seq_length:]
 
-        # 5. Final block
+        # 4. Final block
         hidden_states = self.norm_out(hidden_states, temb=emb)
         hidden_states = self.proj_out(hidden_states)
 
-        # 6. Unpatchify
+        # 5. Unpatchify
         p = self.config.patch_size
-        output = hidden_states.reshape(batch_size, num_frames, height // p, width // p, channels, p, p)
-        output = output.permute(0, 1, 4, 2, 5, 3, 6).flatten(5, 6).flatten(3, 4)
+        p_t = self.config.patch_size_t
+
+        if p_t is None:
+            output = hidden_states.reshape(batch_size, local_num_frames, height // p, width // p, -1, p, p)
+            output = output.permute(0, 1, 4, 2, 5, 3, 6).flatten(5, 6).flatten(3, 4)
+        else:
+            output = hidden_states.reshape(
+                batch_size, (local_num_frames + p_t - 1) // p_t, height // p, width // p, -1, p_t, p, p
+            )
+            output = output.permute(0, 1, 5, 4, 2, 6, 3, 7).flatten(6, 7).flatten(4, 5).flatten(1, 2)
+        
+        if num_frames == 1:
+            output = output[:, :num_frames, :]
 
         if not return_dict:
             return (output,)
         return Transformer2DModelOutput(sample=output)
 
     @classmethod
-    def from_pretrained_2d(cls, pretrained_model_path, subfolder=None, transformer_additional_kwargs={}):
+    def from_pretrained_2d(
+        cls, pretrained_model_path, subfolder=None, transformer_additional_kwargs={},
+        low_cpu_mem_usage=False, torch_dtype=torch.bfloat16
+    ):
         if subfolder is not None:
             pretrained_model_path = os.path.join(pretrained_model_path, subfolder)
         print(f"loaded 3D transformer's pretrained weights from {pretrained_model_path} ...")
@@ -557,9 +669,69 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
             config = json.load(f)
 
         from diffusers.utils import WEIGHTS_NAME
-        model = cls.from_config(config, **transformer_additional_kwargs)
         model_file = os.path.join(pretrained_model_path, WEIGHTS_NAME)
         model_file_safetensors = model_file.replace(".bin", ".safetensors")
+
+        if low_cpu_mem_usage:
+            try:
+                import re
+                from diffusers.utils import is_accelerate_available
+                from diffusers.models.modeling_utils import load_model_dict_into_meta
+                if is_accelerate_available():
+                    import accelerate
+                
+                # Instantiate model with empty weights
+                with accelerate.init_empty_weights():
+                    model = cls.from_config(config, **transformer_additional_kwargs)
+
+                param_device = "cpu"
+                if os.path.exists(model_file):
+                    state_dict = torch.load(model_file, map_location="cpu")
+                elif os.path.exists(model_file_safetensors):
+                    from safetensors.torch import load_file, safe_open
+                    state_dict = load_file(model_file_safetensors)
+                else:
+                    from safetensors.torch import load_file, safe_open
+                    model_files_safetensors = glob.glob(os.path.join(pretrained_model_path, "*.safetensors"))
+                    state_dict = {}
+                    for _model_file_safetensors in model_files_safetensors:
+                        _state_dict = load_file(_model_file_safetensors)
+                        for key in _state_dict:
+                            state_dict[key] = _state_dict[key]
+                model._convert_deprecated_attention_blocks(state_dict)
+                # move the params from meta device to cpu
+                missing_keys = set(model.state_dict().keys()) - set(state_dict.keys())
+                if len(missing_keys) > 0:
+                    raise ValueError(
+                        f"Cannot load {cls} from {pretrained_model_path} because the following keys are"
+                        f" missing: \n {', '.join(missing_keys)}. \n Please make sure to pass"
+                        " `low_cpu_mem_usage=False` and `device_map=None` if you want to randomly initialize"
+                        " those weights or else make sure your checkpoint file is correct."
+                    )
+
+                unexpected_keys = load_model_dict_into_meta(
+                    model,
+                    state_dict,
+                    device=param_device,
+                    dtype=torch_dtype,
+                    model_name_or_path=pretrained_model_path,
+                )
+
+                if cls._keys_to_ignore_on_load_unexpected is not None:
+                    for pat in cls._keys_to_ignore_on_load_unexpected:
+                        unexpected_keys = [k for k in unexpected_keys if re.search(pat, k) is None]
+
+                if len(unexpected_keys) > 0:
+                    print(
+                        f"Some weights of the model checkpoint were not used when initializing {cls.__name__}: \n {[', '.join(unexpected_keys)]}"
+                    )
+                return model
+            except Exception as e:
+                print(
+                    f"The low_cpu_mem_usage mode is not work because {e}. Use low_cpu_mem_usage=False instead."
+                )
+        
+        model = cls.from_config(config, **transformer_additional_kwargs)
         if os.path.exists(model_file):
             state_dict = torch.load(model_file, map_location="cpu")
         elif os.path.exists(model_file_safetensors):
@@ -569,8 +741,8 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
             from safetensors.torch import load_file, safe_open
             model_files_safetensors = glob.glob(os.path.join(pretrained_model_path, "*.safetensors"))
             state_dict = {}
-            for model_file_safetensors in model_files_safetensors:
-                _state_dict = load_file(model_file_safetensors)
+            for _model_file_safetensors in model_files_safetensors:
+                _state_dict = load_file(_model_file_safetensors)
                 for key in _state_dict:
                     state_dict[key] = _state_dict[key]
         
@@ -579,6 +751,14 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
             if len(new_shape) == 5:
                 state_dict['patch_embed.proj.weight'] = state_dict['patch_embed.proj.weight'].unsqueeze(2).expand(new_shape).clone()
                 state_dict['patch_embed.proj.weight'][:, :, :-1] = 0
+            elif len(new_shape) == 2:
+                if model.state_dict()['patch_embed.proj.weight'].size()[1] > state_dict['patch_embed.proj.weight'].size()[1]:
+                    model.state_dict()['patch_embed.proj.weight'][:, :state_dict['patch_embed.proj.weight'].size()[1]] = state_dict['patch_embed.proj.weight']
+                    model.state_dict()['patch_embed.proj.weight'][:, state_dict['patch_embed.proj.weight'].size()[1]:] = 0
+                    state_dict['patch_embed.proj.weight'] = model.state_dict()['patch_embed.proj.weight']
+                else:
+                    model.state_dict()['patch_embed.proj.weight'][:, :] = state_dict['patch_embed.proj.weight'][:, :model.state_dict()['patch_embed.proj.weight'].size()[1]]
+                    state_dict['patch_embed.proj.weight'] = model.state_dict()['patch_embed.proj.weight']
             else:
                 if model.state_dict()['patch_embed.proj.weight'].size()[1] > state_dict['patch_embed.proj.weight'].size()[1]:
                     model.state_dict()['patch_embed.proj.weight'][:, :state_dict['patch_embed.proj.weight'].size()[1], :, :] = state_dict['patch_embed.proj.weight']
@@ -594,16 +774,18 @@ class CogVideoXTransformer3DModel(ModelMixin, ConfigMixin):
                 tmp_state_dict[key] = state_dict[key]
             else:
                 print(key, "Size don't match, skip")
+                
         state_dict = tmp_state_dict
 
         m, u = model.load_state_dict(state_dict, strict=False)
         print(f"### missing keys: {len(m)}; \n### unexpected keys: {len(u)};")
         print(m)
         
-        params = [p.numel() if "mamba" in n else 0 for n, p in model.named_parameters()]
-        print(f"### Mamba Parameters: {sum(params) / 1e6} M")
+        params = [p.numel() if "." in n else 0 for n, p in model.named_parameters()]
+        print(f"### All Parameters: {sum(params) / 1e6} M")
 
         params = [p.numel() if "attn1." in n else 0 for n, p in model.named_parameters()]
         print(f"### attn1 Parameters: {sum(params) / 1e6} M")
         
+        model = model.to(torch_dtype)
         return model
