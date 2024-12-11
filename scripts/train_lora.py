@@ -1069,9 +1069,11 @@ def main():
                 new_examples["pixel_values"].append(transform(pixel_values))
                 new_examples["text"].append(example["text"])
 
+                batch_video_length = int(min(batch_video_length, len(pixel_values)))
+
                 # Magvae needs the number of frames to be 4n + 1.
-                local_latent_length = (len(pixel_values) - 1) // sample_n_frames_bucket_interval + 1
-                local_video_length = (len(pixel_values) - 1) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1
+                local_latent_length = (batch_video_length - 1) // sample_n_frames_bucket_interval + 1
+                local_video_length = (batch_video_length - 1) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1
 
                 # For CogVideoX 1.5, the latent frames should be padded to make it divisible by patch_size_t
                 patch_size_t = accelerator.unwrap_model(transformer3d).config.patch_size_t
@@ -1079,8 +1081,7 @@ def main():
                 if patch_size_t is not None and local_latent_length % patch_size_t != 0:
                     additional_frames = local_latent_length % patch_size_t
                     local_video_length -= additional_frames * sample_n_frames_bucket_interval
-
-                batch_video_length = int(min(batch_video_length, local_video_length))
+                batch_video_length = local_video_length
 
                 if batch_video_length <= 0:
                     batch_video_length = 1
