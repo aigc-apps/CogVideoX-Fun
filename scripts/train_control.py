@@ -945,7 +945,8 @@ def main():
         )
 
     # Get the training dataset
-    sample_n_frames_bucket_interval = 4
+    sample_n_frames_bucket_interval = vae.config.temporal_compression_ratio
+    patch_size_t = accelerator.unwrap_model(transformer3d).config.patch_size_t
 
     train_dataset = ImageVideoControlDataset(
         args.train_data_meta, args.train_data_dir,
@@ -1097,7 +1098,6 @@ def main():
                 local_video_length = (batch_video_length - 1) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1
 
                 # For CogVideoX 1.5, the latent frames should be padded to make it divisible by patch_size_t
-                patch_size_t = accelerator.unwrap_model(transformer3d).config.patch_size_t
                 additional_frames = 0
                 if patch_size_t is not None and local_latent_length % patch_size_t != 0:
                     additional_frames = local_latent_length % patch_size_t
