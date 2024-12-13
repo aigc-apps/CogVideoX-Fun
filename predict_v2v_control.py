@@ -47,7 +47,7 @@ weight_dtype            = torch.bfloat16
 control_video           = "asset/pose.mp4"
 
 # prompts
-prompt                  = "A young woman with beautiful clear eyes and blonde hair, wearing white clothes and twisting her body, with the camera focused on her face. High quality, masterpiece, best quality, high resolution, ultra-fine, dreamlike. "
+prompt                  = "A young woman with beautiful face, dressed in white, is moving her body. "
 negative_prompt         = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. "
 guidance_scale          = 6.0
 seed                    = 43
