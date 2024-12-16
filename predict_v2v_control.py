@@ -36,6 +36,8 @@ vae_path            = None
 lora_path           = None
 # Other params
 sample_size         = [672, 384]
+# V1.0 and V1.1 support up to 49 frames of video generation,
+# while V1.5 supports up to 85 frames.  
 video_length        = 49
 fps                 = 8
 
@@ -45,7 +47,7 @@ weight_dtype            = torch.bfloat16
 control_video           = "asset/pose.mp4"
 
 # prompts
-prompt                  = "A young woman with beautiful clear eyes and blonde hair, wearing white clothes and twisting her body, with the camera focused on her face. High quality, masterpiece, best quality, high resolution, ultra-fine, dreamlike. "
+prompt                  = "A young woman with beautiful face, dressed in white, is moving her body. "
 negative_prompt         = "The video is not of a high quality, it has a low resolution. Watermark present in each frame. The background is solid. Strange body and strange trajectory. Distortion. "
 guidance_scale          = 6.0
 seed                    = 43
@@ -56,6 +58,7 @@ save_path               = "samples/cogvideox-fun-videos_control"
 transformer = CogVideoXTransformer3DModel.from_pretrained_2d(
     model_name, 
     subfolder="transformer",
+    low_cpu_mem_usage=True,
 ).to(weight_dtype)
 
 if transformer_path is not None:
@@ -122,9 +125,13 @@ else:
 generator = torch.Generator(device="cuda").manual_seed(seed)
 
 if lora_path is not None:
-    pipeline = merge_lora(pipeline, lora_path, lora_weight, "cuda")
+    pipeline = merge_lora(pipeline, lora_path, lora_weight)
 
 video_length = int((video_length - 1) // vae.config.temporal_compression_ratio * vae.config.temporal_compression_ratio) + 1 if video_length != 1 else 1
+latent_frames = (video_length - 1) // vae.config.temporal_compression_ratio + 1
+if video_length != 1 and transformer.config.patch_size_t is not None and latent_frames % transformer.config.patch_size_t != 0:
+    additional_frames = transformer.config.patch_size_t - latent_frames % transformer.config.patch_size_t
+    video_length += additional_frames * vae.config.temporal_compression_ratio
 input_video, input_video_mask, clip_image = get_video_to_video_latent(control_video, video_length=video_length, sample_size=sample_size, fps=fps)
 
 with torch.no_grad():
@@ -142,7 +149,7 @@ with torch.no_grad():
     ).videos
 
 if lora_path is not None:
-    pipeline = unmerge_lora(pipeline, lora_path, lora_weight, "cuda")
+    pipeline = unmerge_lora(pipeline, lora_path, lora_weight)
     
 if not os.path.exists(save_path):
     os.makedirs(save_path, exist_ok=True)

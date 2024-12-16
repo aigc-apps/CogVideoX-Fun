@@ -36,24 +36,18 @@ from accelerate.logging import get_logger
 from accelerate.state import AcceleratorState
 from accelerate.utils import ProjectConfiguration, set_seed
 from diffusers import AutoencoderKL, DDIMScheduler, DDPMScheduler
-from diffusers.models.embeddings import get_3d_rotary_pos_embed
 from diffusers.optimization import get_scheduler
 from diffusers.training_utils import EMAModel
 from diffusers.utils import check_min_version, deprecate, is_wandb_available
-from diffusers.utils.import_utils import is_xformers_available
 from diffusers.utils.torch_utils import is_compiled_module
 from einops import rearrange
-from huggingface_hub import create_repo, upload_folder
-from omegaconf import OmegaConf
 from packaging import version
 from PIL import Image
 from torch.utils.data import RandomSampler
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from tqdm.auto import tqdm
-from transformers import (BertModel, BertTokenizer, CLIPImageProcessor,
-                          CLIPVisionModelWithProjection, MT5Tokenizer,
-                          T5EncoderModel, T5Tokenizer)
+from transformers import T5EncoderModel, T5Tokenizer
 from transformers.utils import ContextManagers
 
 import datasets
@@ -74,8 +68,10 @@ from cogvideox.data.dataset_image_video import (ImageVideoDataset,
 from cogvideox.models.autoencoder_magvit import AutoencoderKLCogVideoX
 from cogvideox.models.transformer3d import CogVideoXTransformer3DModel
 from cogvideox.pipeline.pipeline_cogvideox import CogVideoX_Fun_Pipeline
-from cogvideox.pipeline.pipeline_cogvideox_inpaint import \
-    CogVideoX_Fun_Pipeline_Inpaint, add_noise_to_reference_video
+from cogvideox.pipeline.pipeline_cogvideox_inpaint import (
+    CogVideoX_Fun_Pipeline_Inpaint, add_noise_to_reference_video, get_3d_rotary_pos_embed,
+    get_resize_crop_region_for_grid)
+from cogvideox.utils.discrete_sampler import DiscreteSampling
 from cogvideox.utils.utils import get_image_to_video_latent, save_videos_grid
 
 if is_wandb_available():
@@ -547,6 +543,9 @@ def parse_args():
         "--snr_loss", action="store_true", help="Whether or not to use snr_loss."
     )
     parser.add_argument(
+        "--uniform_sampling", action="store_true", help="Whether or not to use uniform_sampling."
+    )
+    parser.add_argument(
         "--enable_text_encoder_in_dataloader", action="store_true", help="Whether or not to use text encoder in dataloader."
     )
     parser.add_argument(
@@ -989,8 +988,9 @@ def main():
         )
 
     # Get the training dataset
-    sample_n_frames_bucket_interval = 4
-
+    sample_n_frames_bucket_interval = vae.config.temporal_compression_ratio
+    patch_size_t = accelerator.unwrap_model(transformer3d).config.patch_size_t
+    
     train_dataset = ImageVideoDataset(
         args.train_data_meta, args.train_data_dir,
         video_sample_size=args.video_sample_size, video_sample_stride=args.video_sample_stride, video_sample_n_frames=args.video_sample_n_frames, 
@@ -1009,26 +1009,15 @@ def main():
             batch_size=args.train_batch_size, train_folder = args.train_data_dir, drop_last=True,
             aspect_ratios=aspect_ratio_sample_size,
         )
-        if args.keep_all_node_same_token_length:
-            if args.token_sample_size > 256:
-                numbers_list = list(range(256, args.token_sample_size + 1, 128))
-
-                if numbers_list[-1] != args.token_sample_size:
-                    numbers_list.append(args.token_sample_size)
-            else:
-                numbers_list = [256]
-            numbers_list = [_number * _number * args.video_sample_n_frames for _number in  numbers_list]
-        else:
-            numbers_list = None
 
         def get_length_to_frame_num(token_length):
             if args.image_sample_size > args.video_sample_size:
-                sample_sizes = list(range(256, args.image_sample_size + 1, 128))
+                sample_sizes = list(range(args.video_sample_size, args.image_sample_size + 1, 128))
 
                 if sample_sizes[-1] != args.image_sample_size:
                     sample_sizes.append(args.image_sample_size)
             else:
-                sample_sizes = [256]
+                sample_sizes = [args.image_sample_size]
             
             length_to_frame_num = {
                 sample_size: min(token_length / sample_size / sample_size, args.video_sample_n_frames) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1 for sample_size in sample_sizes
@@ -1037,21 +1026,21 @@ def main():
             return length_to_frame_num
 
         def collate_fn(examples):
+            # Get token length
             target_token_length = args.video_sample_n_frames * args.token_sample_size * args.token_sample_size
-            length_to_frame_num = get_length_to_frame_num(
-                target_token_length, 
-            )
+            length_to_frame_num = get_length_to_frame_num(target_token_length)
 
             # Create new output
             new_examples                 = {}
             new_examples["target_token_length"] = target_token_length
             new_examples["pixel_values"] = []
             new_examples["text"]         = []
+            # Used in Inpaint mode
             if args.train_mode != "normal":
                 new_examples["mask_pixel_values"] = []
                 new_examples["mask"] = []
 
-            # Get ratio
+            # Get downsample ratio in image and videos
             pixel_value     = examples[0]["pixel_values"]
             data_type       = examples[0]["data_type"]
             f, h, w, c      = np.shape(pixel_value)
@@ -1066,6 +1055,7 @@ def main():
                 if args.random_hw_adapt:
                     if args.training_with_video_token_length:
                         local_min_size = np.min(np.array([np.mean(np.array([np.shape(example["pixel_values"])[1], np.shape(example["pixel_values"])[2]])) for example in examples]))
+                        # The video will be resized to a lower resolution than its own.
                         choice_list = [length for length in list(length_to_frame_num.keys()) if length < local_min_size * 1.25]
                         if len(choice_list) == 0:
                             choice_list = list(length_to_frame_num.keys())
@@ -1121,14 +1111,17 @@ def main():
                         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
                     ])
                 else:
+                    # To 0~1
+                    pixel_values = torch.from_numpy(example["pixel_values"]).permute(0, 3, 1, 2).contiguous()
+                    pixel_values = pixel_values / 255.
+
+                    # Get adapt hw for resize
                     closest_size = list(map(lambda x: int(x), closest_size))
                     if closest_size[0] / h > closest_size[1] / w:
                         resize_size = closest_size[0], int(w * closest_size[0] / h)
                     else:
                         resize_size = int(h * closest_size[1] / w), closest_size[1]
                     
-                    pixel_values = torch.from_numpy(example["pixel_values"]).permute(0, 3, 1, 2).contiguous()
-                    pixel_values = pixel_values / 255.
                     transform = transforms.Compose([
                         transforms.Resize(resize_size, interpolation=transforms.InterpolationMode.BILINEAR),  # Image.BICUBIC
                         transforms.CenterCrop(closest_size),
@@ -1136,14 +1129,21 @@ def main():
                     ])
                 new_examples["pixel_values"].append(transform(pixel_values))
                 new_examples["text"].append(example["text"])
-                batch_video_length = int(
-                    min(
-                        batch_video_length,
-                        (len(pixel_values) - 1) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1, 
-                    )
-                )
 
-                if batch_video_length == 0:
+                batch_video_length = int(min(batch_video_length, len(pixel_values)))
+
+                # Magvae needs the number of frames to be 4n + 1.
+                local_latent_length = (batch_video_length - 1) // sample_n_frames_bucket_interval + 1
+                local_video_length = (batch_video_length - 1) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1
+
+                # For CogVideoX 1.5, the latent frames should be padded to make it divisible by patch_size_t
+                additional_frames = 0
+                if patch_size_t is not None and local_latent_length % patch_size_t != 0:
+                    additional_frames = local_latent_length % patch_size_t
+                    local_video_length -= additional_frames * sample_n_frames_bucket_interval
+                batch_video_length = local_video_length
+
+                if batch_video_length <= 0:
                     batch_video_length = 1
 
                 if args.train_mode != "normal":
@@ -1152,11 +1152,13 @@ def main():
                     new_examples["mask_pixel_values"].append(mask_pixel_values)
                     new_examples["mask"].append(mask)
 
+            # Limit the number of frames to the same
             new_examples["pixel_values"] = torch.stack([example[:batch_video_length] for example in new_examples["pixel_values"]])
             if args.train_mode != "normal":
                 new_examples["mask_pixel_values"] = torch.stack([example[:batch_video_length] for example in new_examples["mask_pixel_values"]])
                 new_examples["mask"] = torch.stack([example[:batch_video_length] for example in new_examples["mask"]])
 
+            # Encode prompts when enable_text_encoder_in_dataloader=True
             if args.enable_text_encoder_in_dataloader:
                 prompt_ids = tokenizer(
                     new_examples['text'], 
@@ -1307,6 +1309,8 @@ def main():
         vae_stream_1 = None
         vae_stream_2 = None
 
+    idx_sampling = DiscreteSampling(args.train_sampling_steps, uniform_sampling=args.uniform_sampling)
+
     for epoch in range(first_epoch, args.num_train_epochs):
         train_loss = 0.0
         batch_sampler.sampler.generator = torch.Generator().manual_seed(args.seed + epoch)
@@ -1330,6 +1334,8 @@ def main():
             with accelerator.accumulate(transformer3d):
                 # Convert images to latent space
                 pixel_values = batch["pixel_values"].to(weight_dtype)
+
+                # Increase the batch size when the length of the latent sequence of the current sample is small
                 if args.training_with_video_token_length:
                     if args.video_sample_n_frames * args.token_sample_size * args.token_sample_size // 16 >= pixel_values.size()[1] * pixel_values.size()[3] * pixel_values.size()[4]:
                         pixel_values = torch.tile(pixel_values, (4, 1, 1, 1, 1))
@@ -1349,6 +1355,7 @@ def main():
                 if args.train_mode != "normal":
                     mask_pixel_values = batch["mask_pixel_values"].to(weight_dtype)
                     mask = batch["mask"].to(weight_dtype)
+                    # Increase the batch size when the length of the latent sequence of the current sample is small
                     if args.training_with_video_token_length:
                         if args.video_sample_n_frames * args.token_sample_size * args.token_sample_size // 16 >= pixel_values.size()[1] * pixel_values.size()[3] * pixel_values.size()[4]:
                             mask_pixel_values = torch.tile(mask_pixel_values, (4, 1, 1, 1, 1))
@@ -1357,43 +1364,78 @@ def main():
                             mask_pixel_values = torch.tile(mask_pixel_values, (2, 1, 1, 1, 1))
                             mask = torch.tile(mask, (2, 1, 1, 1, 1))
 
-                def create_special_list(length):
-                    if length == 1:
-                        return [1.0]
-                    if length >= 2:
-                        last_element = 0.90
-                        remaining_sum = 1.0 - last_element
-                        other_elements_value = remaining_sum / (length - 1)
-                        special_list = [other_elements_value] * (length - 1) + [last_element]
-                        return special_list
-                    
-                if args.keep_all_node_same_token_length:
-                    actual_token_length = index_rng.choice(numbers_list)
-
-                    actual_video_length = (min(
-                            actual_token_length / pixel_values.size()[-1] / pixel_values.size()[-2], args.video_sample_n_frames
-                    ) - 1) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1
-                    actual_video_length = int(max(actual_video_length, 1))
-                else:
-                    actual_video_length = None
-
                 if args.random_frame_crop:
+                    def _create_special_list(length):
+                        if length == 1:
+                            return [1.0]
+                        if length >= 2:
+                            last_element = 0.90
+                            remaining_sum = 1.0 - last_element
+                            other_elements_value = remaining_sum / (length - 1)
+                            special_list = [other_elements_value] * (length - 1) + [last_element]
+                            return special_list
                     select_frames = [_tmp for _tmp in list(range(sample_n_frames_bucket_interval + 1, args.video_sample_n_frames + sample_n_frames_bucket_interval, sample_n_frames_bucket_interval))]
-                    select_frames_prob = np.array(create_special_list(len(select_frames)))
+                    select_frames_prob = np.array(_create_special_list(len(select_frames)))
                     
-                    if rng is None:
-                        temp_n_frames = np.random.choice(select_frames, p = select_frames_prob)
+                    if len(select_frames) != 0:
+                        if rng is None:
+                            temp_n_frames = np.random.choice(select_frames, p = select_frames_prob)
+                        else:
+                            temp_n_frames = rng.choice(select_frames, p = select_frames_prob)
                     else:
-                        temp_n_frames = rng.choice(select_frames, p = select_frames_prob)
-                    if args.keep_all_node_same_token_length:
-                        temp_n_frames = min(actual_video_length, temp_n_frames)
+                        temp_n_frames = 1
+
+                    # Magvae needs the number of frames to be 4n + 1.
+                    local_latent_length = (temp_n_frames - 1) // sample_n_frames_bucket_interval + 1
+                    # For CogVideoX 1.5, the latent frames should be padded to make it divisible by patch_size_t
+                    patch_size_t = accelerator.unwrap_model(transformer3d).config.patch_size_t
+                    additional_frames = 0
+                    if patch_size_t is not None and local_latent_length % patch_size_t != 0:
+                        additional_frames = local_latent_length % patch_size_t
+                        temp_n_frames -= additional_frames * sample_n_frames_bucket_interval
+                    if temp_n_frames <= 0:
+                        temp_n_frames = 1
 
                     pixel_values = pixel_values[:, :temp_n_frames, :, :]
 
                     if args.train_mode != "normal":
                         mask_pixel_values = mask_pixel_values[:, :temp_n_frames, :, :]
                         mask = mask[:, :temp_n_frames, :, :]
+                    
+                # Keep all node same token length to accelerate the traning when resolution grows.
+                if args.keep_all_node_same_token_length:
+                    if args.token_sample_size > 256:
+                        numbers_list = list(range(256, args.token_sample_size + 1, 128))
 
+                        if numbers_list[-1] != args.token_sample_size:
+                            numbers_list.append(args.token_sample_size)
+                    else:
+                        numbers_list = [256]
+                    numbers_list = [_number * _number * args.video_sample_n_frames for _number in  numbers_list]
+            
+                    actual_token_length = index_rng.choice(numbers_list)
+                    actual_video_length = (min(
+                            actual_token_length / pixel_values.size()[-1] / pixel_values.size()[-2], args.video_sample_n_frames
+                    ) - 1) // sample_n_frames_bucket_interval * sample_n_frames_bucket_interval + 1
+                    actual_video_length = int(max(actual_video_length, 1))
+
+                    # Magvae needs the number of frames to be 4n + 1.
+                    local_latent_length = (actual_video_length - 1) // sample_n_frames_bucket_interval + 1
+                    # For CogVideoX 1.5, the latent frames should be padded to make it divisible by patch_size_t
+                    patch_size_t = accelerator.unwrap_model(transformer3d).config.patch_size_t
+                    additional_frames = 0
+                    if patch_size_t is not None and local_latent_length % patch_size_t != 0:
+                        additional_frames = local_latent_length % patch_size_t
+                        actual_video_length -= additional_frames * sample_n_frames_bucket_interval
+                    if actual_video_length <= 0:
+                        actual_video_length = 1
+
+                    pixel_values = pixel_values[:, :actual_video_length, :, :]
+                    if args.train_mode != "normal":
+                        mask_pixel_values = mask_pixel_values[:, :actual_video_length, :, :]
+                        mask = mask[:, :actual_video_length, :, :]
+
+                # Make the inpaint latents to be zeros.
                 if args.train_mode != "normal":
                     t2v_flag = [(_mask == 1).all() for _mask in mask]
                     new_t2v_flag = []
@@ -1408,11 +1450,11 @@ def main():
                     torch.cuda.empty_cache()
                     vae.to(accelerator.device)
                     if not args.enable_text_encoder_in_dataloader:
-                        text_encoder.to(accelerator.device)
+                        text_encoder.to("cpu")
 
                 with torch.no_grad():
                     # This way is quicker when batch grows up
-                    def _slice_vae(pixel_values):
+                    def _batch_encode_vae(pixel_values):
                         pixel_values = rearrange(pixel_values, "b f c h w -> b c f h w")
                         bs = args.vae_mini_batch
                         new_pixel_values = []
@@ -1421,14 +1463,13 @@ def main():
                             pixel_values_bs = vae.encode(pixel_values_bs)[0]
                             pixel_values_bs = pixel_values_bs.sample()
                             new_pixel_values.append(pixel_values_bs)
-                            vae._clear_fake_context_parallel_cache()
                         return torch.cat(new_pixel_values, dim = 0)
                     if vae_stream_1 is not None:
                         vae_stream_1.wait_stream(torch.cuda.current_stream())
                         with torch.cuda.stream(vae_stream_1):
-                            latents = _slice_vae(pixel_values)
+                            latents = _batch_encode_vae(pixel_values)
                     else:
-                        latents = _slice_vae(pixel_values)
+                        latents = _batch_encode_vae(pixel_values)
                     latents = latents * vae.config.scaling_factor
 
                     if args.train_mode != "normal":
@@ -1438,17 +1479,8 @@ def main():
 
                         if unwrap_model(transformer3d).config.add_noise_in_inpaint_model:
                             mask_pixel_values = add_noise_to_reference_video(mask_pixel_values)
-                        mask_pixel_values = rearrange(mask_pixel_values, "b f c h w -> b c f h w")
-                        bs = args.vae_mini_batch
-                        new_mask_pixel_values = []
-                        for i in range(0, mask_pixel_values.shape[0], bs):
-                            mask_pixel_values_bs = mask_pixel_values[i : i + bs]
-                            mask_pixel_values_bs = vae.encode(mask_pixel_values_bs)[0]
-                            mask_pixel_values_bs = mask_pixel_values_bs.sample()
-                            new_mask_pixel_values.append(mask_pixel_values_bs)
-                            vae._clear_fake_context_parallel_cache()
-                        mask_latents = torch.cat(new_mask_pixel_values, dim = 0)
-
+                        # Encode inpaint latents.
+                        mask_latents = _batch_encode_vae(mask_pixel_values)
                         if vae_stream_2 is not None:
                             torch.cuda.current_stream().wait_stream(vae_stream_2) 
 
@@ -1494,26 +1526,9 @@ def main():
                 noise = torch.randn(latents.size(), device=latents.device, generator=torch_rng, dtype=weight_dtype)
                 # Sample a random timestep for each image
                 # timesteps = generate_timestep_with_lognorm(0, args.train_sampling_steps, (bsz,), device=latents.device, generator=torch_rng)
-                timesteps = torch.randint(0, args.train_sampling_steps, (bsz,), device=latents.device, generator=torch_rng)
+                # timesteps = torch.randint(0, args.train_sampling_steps, (bsz,), device=latents.device, generator=torch_rng)
+                timesteps = idx_sampling(bsz, generator=torch_rng, device=latents.device)
                 timesteps = timesteps.long()
-
-                # Similar to diffusers.pipelines.hunyuandit.pipeline_hunyuandit.get_resize_crop_region_for_grid
-                def get_resize_crop_region_for_grid(src, tgt_width, tgt_height):
-                    tw = tgt_width
-                    th = tgt_height
-                    h, w = src
-                    r = h / w
-                    if r > (th / tw):
-                        resize_height = th
-                        resize_width = int(round(th / h * w))
-                    else:
-                        resize_width = tw
-                        resize_height = int(round(tw / w * h))
-
-                    crop_top = int(round((th - resize_height) / 2.0))
-                    crop_left = int(round((tw - resize_width) / 2.0))
-
-                    return (crop_top, crop_left), (crop_top + resize_height, crop_left + resize_width)
 
                 def _prepare_rotary_positional_embeddings(
                     height: int,
@@ -1524,21 +1539,38 @@ def main():
                     vae_scale_factor_spatial = (
                         2 ** (len(vae.config.block_out_channels) - 1) if vae is not None else 8
                     )
-                    grid_height = height // (vae_scale_factor_spatial * unwrap_model(transformer3d).config.patch_size)
-                    grid_width = width // (vae_scale_factor_spatial * unwrap_model(transformer3d).config.patch_size)
-                    base_size_width = 720 // (vae_scale_factor_spatial * unwrap_model(transformer3d).config.patch_size)
-                    base_size_height = 480 // (vae_scale_factor_spatial * unwrap_model(transformer3d).config.patch_size)
 
-                    grid_crops_coords = get_resize_crop_region_for_grid(
-                        (grid_height, grid_width), base_size_width, base_size_height
-                    )
-                    freqs_cos, freqs_sin = get_3d_rotary_pos_embed(
-                        embed_dim=unwrap_model(transformer3d).config.attention_head_dim,
-                        crops_coords=grid_crops_coords,
-                        grid_size=(grid_height, grid_width),
-                        temporal_size=num_frames,
-                        use_real=True,
-                    )
+                    p = unwrap_model(transformer3d).config.patch_size
+                    p_t = unwrap_model(transformer3d).config.patch_size_t
+
+                    grid_height = height // (vae_scale_factor_spatial * p)
+                    grid_width = width // (vae_scale_factor_spatial * p)
+                    base_size_height = unwrap_model(transformer3d).config.sample_height // p
+                    base_size_width = unwrap_model(transformer3d).config.sample_width // p
+
+                    if p_t is None:
+                        # CogVideoX 1.0
+                        grid_crops_coords = get_resize_crop_region_for_grid(
+                            (grid_height, grid_width), base_size_width, base_size_height
+                        )
+                        freqs_cos, freqs_sin = get_3d_rotary_pos_embed(
+                            embed_dim=unwrap_model(transformer3d).config.attention_head_dim,
+                            crops_coords=grid_crops_coords,
+                            grid_size=(grid_height, grid_width),
+                            temporal_size=num_frames,
+                            use_real=True,
+                        )
+                    else:
+                        # CogVideoX 1.5
+                        base_num_frames = (num_frames + p_t - 1) // p_t
+                        freqs_cos, freqs_sin = get_3d_rotary_pos_embed(
+                            embed_dim=unwrap_model(transformer3d).config.attention_head_dim,
+                            crops_coords=None,
+                            grid_size=(grid_height, grid_width),
+                            temporal_size=base_num_frames,
+                            grid_type="slice",
+                            max_size=(base_size_height, base_size_width),
+                        )
                     freqs_cos = freqs_cos.to(device=device)
                     freqs_sin = freqs_sin.to(device=device)
                     return freqs_cos, freqs_sin
@@ -1569,7 +1601,7 @@ def main():
                     return_dict=False,
                     inpaint_latents=inpaint_latents if args.train_mode != "normal" else None,
                 )[0]
-                print(noise_pred.size(), noisy_latents.size(), latents.size(), pixel_values.size())
+                
                 loss = F.mse_loss(noise_pred.float(), target.float(), reduction="mean")
 
                 if args.motion_sub_loss and noise_pred.size()[1] > 2:
