@@ -102,23 +102,6 @@ def generate_timestep_with_lognorm(low, high, shape, device="cpu", generator=Non
     t = 1 / (1 + torch.exp(-u)) * (high - low) + low
     return torch.clip(t.to(torch.int32), low, high - 1)
 
-def compute_empirical_mu(image_seq_len: int, num_steps: int) -> float:
-    a1, b1 = 8.73809524e-05, 1.89833333
-    a2, b2 = 0.00016927, 0.45666666
-
-    if image_seq_len > 4300:
-        mu = a2 * image_seq_len + b2
-        return float(mu)
-
-    m_200 = a2 * image_seq_len + b2
-    m_10 = a1 * image_seq_len + b1
-
-    a = (m_200 - m_10) / 190.0
-    b = m_200 - 200.0 * a
-    mu = a * num_steps + b
-
-    return float(mu)
-
 def calculate_shift(
     image_seq_len,
     base_seq_len: int = 256,
@@ -464,6 +447,7 @@ def compute_log_prob(
         log_prob: Log probability of the transition
         prev_sample_mean: Mean of the predicted previous sample
         std_dev_t: Standard deviation at timestep t
+        sqrt_dt: sqrt(-dt), so the Gaussian variance is (std_dev_t * sqrt_dt) ** 2
         ref_prev_sample_mean: Mean from reference model (if ref_model provided)
     """
     batch_size = sample["latents"].shape[0]
@@ -510,13 +494,14 @@ def compute_log_prob(
     noise_pred = -noise_pred  # Sign convention
     
     # Compute log prob using SDE step
-    _, log_prob, prev_sample_mean, std_dev_t = sde_step_with_logprob(
+    _, log_prob, prev_sample_mean, std_dev_t, sqrt_dt = sde_step_with_logprob(
         noise_scheduler,
         noise_pred.float(),
         timesteps,
         latents.float(),
         prev_sample=next_latents.float(),
         noise_level=noise_level,
+        return_sqrt_dt=True,
     )
     
     # Compute reference model prediction if provided
@@ -557,7 +542,7 @@ def compute_log_prob(
                 noise_level=noise_level,
             )
     
-    return log_prob, prev_sample_mean, std_dev_t, ref_prev_sample_mean
+    return log_prob, prev_sample_mean, std_dev_t, sqrt_dt, ref_prev_sample_mean
 
 # Will error if the minimal version of diffusers is not installed. Remove at your own risks.
 check_min_version("0.18.0.dev0")
@@ -2095,7 +2080,7 @@ def main():
                     # Disable gradient sync for accumulation steps, enable for sync steps
                     context = contextlib.nullcontext if should_sync else accelerator.no_sync
                     with context(transformer3d) if not should_sync else contextlib.nullcontext():
-                        log_prob, prev_sample_mean, std_dev_t, ref_prev_sample_mean = compute_log_prob(
+                        log_prob, prev_sample_mean, std_dev_t, sqrt_dt, ref_prev_sample_mean = compute_log_prob(
                             model=transformer3d,
                             vae=vae,
                             sample=sample,
@@ -2128,7 +2113,8 @@ def main():
                         policy_loss = policy_loss / gradient_accumulation_steps_total
 
                         if args.grpo_beta > 0 and ref_prev_sample_mean is not None:
-                            kl_loss = ((prev_sample_mean - ref_prev_sample_mean) ** 2).mean(dim=(1,2,3,4)) / (2 * std_dev_t.squeeze() ** 2 + 1e-8)
+                            # variance = std_dev_t^2 * (-dt) = (std_dev_t * sqrt_dt)^2
+                            kl_loss = ((prev_sample_mean - ref_prev_sample_mean) ** 2).mean(dim=(1,2,3,4)) / (2 * (std_dev_t * sqrt_dt).squeeze() ** 2 + 1e-8)
                             kl_loss = torch.mean(kl_loss)
                             kl_loss = kl_loss / gradient_accumulation_steps_total
                             loss = policy_loss + args.grpo_beta * kl_loss
