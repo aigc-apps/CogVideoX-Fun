@@ -10,13 +10,13 @@ accelerate launch --mixed_precision="bf16" scripts/z_image/train_grpo_lora.py \
   --pretrained_model_name_or_path=$MODEL_NAME \
   --train_data_dir=$DATASET_NAME \
   --train_data_meta=$DATASET_META_NAME \
-  --image_sample_size=1328 \
+  --image_sample_size=768 \
   --train_batch_size=1 \
   --gradient_accumulation_steps=1 \
   --dataloader_num_workers=8 \
   --num_train_epochs=100 \
   --checkpointing_steps=10 \
-  --learning_rate=1e-04 \
+  --learning_rate=3e-04 \
   --seed=42 \
   --output_dir="output_dir_z_image_grpo_lora" \
   --validation_steps=10 \
@@ -24,8 +24,8 @@ accelerate launch --mixed_precision="bf16" scripts/z_image/train_grpo_lora.py \
   --validation_prompts="1girl, black_hair, brown_eyes, earrings, freckles, grey_background, jewelry, lips, long_hair, looking_at_viewer, nose, piercing, realistic, red_lips, solo, upper_body" \
   --gradient_checkpointing \
   --mixed_precision="bf16" \
-  --adam_weight_decay=3e-2 \
-  --adam_epsilon=1e-10 \
+  --adam_weight_decay=1e-4 \
+  --adam_epsilon=1e-8 \
   --vae_mini_batch=1 \
   --max_grad_norm=1 \
   --enable_bucket \
@@ -33,13 +33,14 @@ accelerate launch --mixed_precision="bf16" scripts/z_image/train_grpo_lora.py \
   --rank=128 \
   --network_alpha=64 \
   --noise_level 1.2 \
-  --grpo_num_steps=20 \
+  --clip_range=1e-4 \
+  --grpo_num_steps=10 \
   --grpo_cfg_scale=6 \
-  --sde_window_size 5 \
-  --sde_window_range 0 10 \
+  --sde_window_size 3 \
+  --sde_window_range 0 6 \
   --num_image_per_prompt=16 \
   --num_batches_per_epoch=16 \
   --reward_fn="HPSv3Reward" \
   --reward_fn_kwargs='{"HPSv3Reward": {"checkpoint_path": "models/Diffusion_Transformer/HPSv3/HPSv3.safetensors", "model_name_or_path": "models/Diffusion_Transformer/Qwen2-VL-7B-Instruct"}}' \
   --multi_reward_weights='{"HPSv3Reward": 1}' \
-  --target_name="to_q,to_k,to_v,feed_forward.w1,feed_forward.w2,feed_forward.w3"
+  --target_name="to_q,to_k,to_v,to_out.0,feed_forward.w1,feed_forward.w2,feed_forward.w3"

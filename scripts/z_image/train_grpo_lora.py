@@ -381,7 +381,7 @@ def sample_with_cfg(
                 [out.float() for out in model_out_list], dim=0
             )
 
-        noise_pred = -noise_pred   # 原代码符号约定
+        noise_pred = -noise_pred   # Sign convention (matches original code)
 
         latents, log_prob, prev_latents_mean, std_dev_t = sde_step_with_logprob(
             noise_scheduler,
@@ -2048,6 +2048,47 @@ def main():
                     all_prompt_embeds_flat.append(pe)
                     all_neg_prompt_embeds_flat.append(ne)
 
+            # Drop samples whose within-group reward std is 0 (advantage exactly 0)
+            # so they do not dilute the effective gradient.
+            # Mirrors flow_grpo/scripts/train_sd3_fast.py:
+            #   mask = (samples["advantages"].abs().sum(dim=1) != 0)
+            # plus a divisibility fixup so the kept count stays a multiple of
+            # num_batches_per_epoch (the rebatch below uses
+            #   per_batch_size = total // num_batches_per_epoch, so the batch count
+            #   is always num_batches_per_epoch; hence the backward count and the
+            #   gradient_accumulation_steps_total normalization stay accurate).
+            adv_mask = (samples_concat["advantages"].abs().sum(dim=1) != 0)
+            num_batches_ep = args.num_batches_per_epoch
+            true_count = int(adv_mask.sum().item())
+            remainder = true_count % num_batches_ep
+            if true_count == 0 or remainder != 0:
+                false_indices = torch.where(~adv_mask)[0]
+                num_to_change = num_batches_ep - remainder
+                if len(false_indices) >= num_to_change:
+                    perm = torch.randperm(len(false_indices), device=adv_mask.device)[:num_to_change]
+                    adv_mask[false_indices[perm]] = True
+                else:
+                    num_to_change -= len(false_indices)
+                    true_indices = torch.where(adv_mask)[0]
+                    perm = torch.randperm(len(true_indices), device=adv_mask.device)[:num_to_change]
+                    adv_mask[true_indices[perm]] = False
+            num_dropped = int((~adv_mask).sum().item())
+            if num_dropped > 0:
+                adv_mask_list = adv_mask.tolist()
+                for k in tensor_keys:
+                    samples_concat[k] = samples_concat[k][adv_mask]
+                # Note: list_keys (e.g. samples_concat["prompt_embeds"]) are used
+                # neither by the rebatch below (tensor_keys only) nor by the training
+                # forward (which uses all_prompt_embeds_flat), so we skip filtering
+                # them to avoid an IndexError when their length mismatches the mask.
+                all_prompt_embeds_flat = [e for i, e in enumerate(all_prompt_embeds_flat) if adv_mask_list[i]]
+                all_neg_prompt_embeds_flat = [e for i, e in enumerate(all_neg_prompt_embeds_flat) if adv_mask_list[i]]
+                if accelerator.is_main_process:
+                    logger.info(
+                        f"Epoch {epoch}: advantage==0 mask dropped {num_dropped}/{len(adv_mask_list)} samples, "
+                        f"kept {int(adv_mask.sum().item())}"
+                    )
+
             total_batch_size_collected = samples_concat["timesteps"].shape[0]
 
             #################### TRAINING ####################
@@ -2113,7 +2154,18 @@ def main():
                         policy_loss = policy_loss / gradient_accumulation_steps_total
 
                         if args.grpo_beta > 0 and ref_prev_sample_mean is not None:
-                            # variance = std_dev_t^2 * (-dt) = (std_dev_t * sqrt_dt)^2
+                            # Per-step Gaussian KL between the policy and reference SDE transitions.
+                            # Policy and ref share the same timestep/scheduler, so the transition
+                            # std is identical and model-independent:
+                            #   sigma_step = std_dev_t * sqrt(-dt) = std_dev_t * sqrt_dt
+                            # (sd3_sde_with_logprob.py L71 adds std_dev_t*sqrt(-dt)*noise, and its
+                            #  L74 log_prob denominator is exactly 2*(std_dev_t*sqrt(-dt))**2).
+                            # Equal-variance Gaussians give KL = (mu - mu_ref)^2 / (2*sigma_step^2),
+                            # so the denominator MUST be 2*(std_dev_t*sqrt_dt)**2 to stay consistent
+                            # with the log_prob used in the ratio above. (flow_grpo's 2*std_dev_t**2
+                            # drops the (-dt) factor and contradicts its own log_prob -- do not copy.)
+                            # Latent is 5-D (B,C,1,H,W) -> average over dim=(1,2,3,4); std_dev_t and
+                            # sqrt_dt are (B,1,1,1,1) and squeeze to match the (B,) numerator.
                             kl_loss = ((prev_sample_mean - ref_prev_sample_mean) ** 2).mean(dim=(1,2,3,4)) / (2 * (std_dev_t * sqrt_dt).squeeze() ** 2 + 1e-8)
                             kl_loss = torch.mean(kl_loss)
                             kl_loss = kl_loss / gradient_accumulation_steps_total
