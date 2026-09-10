@@ -2,7 +2,7 @@
 # scaffold (parameter set, trainable modules, EMA, abnormal gradient clip, checkpointing).
 #
 # Full finetuning of the packed-sequence transformer on the *video and audio* rows together, covering `t2v`
-# (text only), `fl2v` (first-frame keyframe conditioning, the keyframe taken from the training sample itself)
+# (text only), `fl2va` (first-frame keyframe conditioning, the keyframe taken from the training sample itself)
 # and `ref2va` (reference image / video / audio conditioning, loaded from `transformer_ref`).
 # The layout mirrors `scripts/ltx2.3/train.py`: batch-level training (bs=1, the packed layout is per-sample),
 # video + audio flow-matching loss weighted 0.5 / 0.5, FSDP + offload composable.
@@ -18,7 +18,7 @@
 # Usage:
 #   accelerate launch scripts/minimax_h3/train.py \
 #       --pretrained_model_name_or_path=/root/MiniMax-H3 \
-#       --train_mode=fl2v --gradient_checkpointing --low_vram --trainable_modules "."
+#       --train_mode=fl2va --gradient_checkpointing --low_vram --trainable_modules "."
 
 import argparse
 import gc
@@ -471,7 +471,7 @@ def log_validation(
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="MiniMax-H3 training (video + audio, t2v / fl2v / ref2va).")
+    parser = argparse.ArgumentParser(description="MiniMax-H3 training (video + audio, t2v / fl2va / ref2va).")
     parser.add_argument(
         "--pretrained_model_name_or_path",
         type=str,
@@ -746,16 +746,16 @@ def parse_args():
     parser.add_argument(
         "--train_mode",
         type=str,
-        default="fl2v",
-        choices=["t2v", "fl2v", "ref2va"],
-        help="t2v (text only), fl2v (first-frame keyframe conditioning), or ref2va (reference to video+audio).",
+        default="fl2va",
+        choices=["t2v", "fl2va", "ref2va"],
+        help="t2v (text only), fl2va (first-frame keyframe conditioning), or ref2va (reference to video+audio).",
     )
     parser.add_argument(
         "--t2v_ratio",
         type=float,
         default=0.0,
-        help=("Under --train_mode=fl2v, the fraction of steps that drop the keyframe and train t2v instead, so one "
-              "run keeps both conditionings. 0 trains fl2v only."),
+        help=("Under --train_mode=fl2va, the fraction of steps that drop the keyframe and train t2v instead, so one "
+              "run keeps both conditionings. 0 trains fl2va only."),
     )
     parser.add_argument(
         "--video_loss_weight",
@@ -843,8 +843,8 @@ def parse_args():
 def main():
     args = parse_args()
 
-    if args.train_mode not in ("t2v", "fl2v", "ref2va"):
-        raise ValueError(f"`train_mode` must be 't2v', 'fl2v' or 'ref2va', got {args.train_mode!r}.")
+    if args.train_mode not in ("t2v", "fl2va", "ref2va"):
+        raise ValueError(f"`train_mode` must be 't2v', 'fl2va' or 'ref2va', got {args.train_mode!r}.")
     if args.video_sample_size % 32:
         raise ValueError(
             f"`video_sample_size` {args.video_sample_size} must be a multiple of 32: the canvas is patched "
@@ -1561,7 +1561,7 @@ def main():
     train_generator = torch.Generator(device="cpu")
     if args.seed is not None:
         train_generator.manual_seed(args.seed)
-    # The t2v / fl2v draw of a mixed run gets its own generator, seeded per rank (mirroring `log_validation`) so the
+    # The t2v / fl2va draw of a mixed run gets its own generator, seeded per rank (mirroring `log_validation`) so the
     # ranks of one global batch do not all land on the same conditioning and every step mixes the two.
     mode_generator = torch.Generator(device="cpu")
     if args.seed is not None:
@@ -1702,13 +1702,13 @@ def main():
                 if args.low_vram:
                     target_latents = target_latents.cpu()
 
-                # The fl2v keyframe is the sample's own first frame, prepared onto the canvas exactly like
+                # The fl2va keyframe is the sample's own first frame, prepared onto the canvas exactly like
                 # inference does (stretch: it is the geometry anchor). The keyframe image is a CPU-side PIL
                 # conversion, so the video VAE stays idle on GPU for a moment under `low_vram`.
                 keyframe, keyframe_anchors = None, ()
                 step_mode = args.train_mode
                 references = None
-                if step_mode == "fl2v" and args.t2v_ratio > 0.0:
+                if step_mode == "fl2va" and args.t2v_ratio > 0.0:
                     if float(torch.rand((), generator=mode_generator)) < args.t2v_ratio:
                         step_mode = "t2v"
                 elif step_mode == "ref2va":
@@ -1721,14 +1721,14 @@ def main():
                         references = normalize_ref2va_references(references, num_frames, audio_sr)
                     else:
                         step_mode = "t2v"
-                if step_mode == "fl2v":
+                if step_mode == "fl2va":
                     keyframe = Image.fromarray(
                         (pixel_values[0].cpu().permute(1, 2, 0).numpy() * 255).clip(0, 255).astype(np.uint8)
                     ).convert("RGB")
                     keyframe = prepare_keyframe_image(keyframe, height, width, stretch=True)
                     keyframe_anchors = ("first",)
 
-                # The conditioner reads `hidden_states[50]` of Qwen3-VL; the presentation of an `fl2v` request
+                # The conditioner reads `hidden_states[50]` of Qwen3-VL; the presentation of an `fl2va` request
                 # carries the keyframe's vision block ahead of the prompt, tagged as video rows. An FSDP-sharded
                 # text encoder tolerates symmetric `.to` moves, so it is brought on-device right before the encode
                 # and back to CPU afterwards.
